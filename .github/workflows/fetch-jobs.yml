@@ -29,34 +29,13 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import re
           import sys
           import urllib.parse
           import urllib.request
+          import urllib.error
           from pathlib import Path
           from datetime import datetime, timezone
-
-          NAUKRI_KEYWORD = (
-              '"Senior iOS Developer",'
-              '"Senior Flutter Developer",'
-              '"Senior Mobile Application Developer",'
-              '"iOS Flutter Developer",'
-              '"Lead iOS Developer",'
-              '"Lead Mobile Application Developer",'
-              '"Senior Mobile App Developer"'
-          )
-
-          NAUKRI_LOCATION = (
-              '"Ahmedabad",'
-              '"Bangalore",'
-              '"Pune",'
-              '"Hyderabad",'
-              '"Mumbai",'
-              '"Delhi",'
-              '"Gurgaon",'
-              '"Noida",'
-              '"Chennai",'
-              '"Remote"'
-          )
 
           ADZUNA_QUERIES = [
               "Flutter Developer",
@@ -64,30 +43,41 @@ jobs:
               "Mobile Application Developer",
           ]
 
-          DATA_DIR = Path("data")
-          DATA_DIR.mkdir(exist_ok=True)
-          OUTPUT = DATA_DIR / "jobs.json"
+          OUTPUT = Path("data/jobs.json")
+          OUTPUT.parent.mkdir(exist_ok=True)
 
-          def http_json(url, method="GET", payload=None, timeout=120):
+          def http_json(url, method="GET", payload=None, headers=None, timeout=120):
+              request_headers = {
+                  "User-Agent": "job-agent-dashboard/1.0",
+                  "Accept": "application/json",
+              }
+              if headers:
+                  request_headers.update(headers)
+
               data = None
-              headers = {"User-Agent": "job-agent-dashboard/1.0"}
               if payload is not None:
                   data = json.dumps(payload).encode("utf-8")
-                  headers["Content-Type"] = "application/json"
+                  request_headers["Content-Type"] = "application/json"
 
               request = urllib.request.Request(
                   url,
                   data=data,
-                  headers=headers,
+                  headers=request_headers,
                   method=method,
               )
-              with urllib.request.urlopen(request, timeout=timeout) as response:
-                  return json.loads(response.read().decode("utf-8"))
+
+              try:
+                  with urllib.request.urlopen(request, timeout=timeout) as response:
+                      return json.loads(response.read().decode("utf-8"))
+              except urllib.error.HTTPError as exc:
+                  body = exc.read().decode("utf-8", errors="replace")
+                  raise RuntimeError(
+                      f"HTTP {exc.code}: {body[:1000]}"
+                  ) from exc
 
           def clean_html(value):
               if not value:
                   return ""
-              import re
               text = re.sub(r"<[^>]+>", " ", str(value))
               text = re.sub(r"\s+", " ", text)
               return text.strip()
@@ -153,45 +143,57 @@ jobs:
                   "scrapedAt": datetime.now(timezone.utc).isoformat(),
               }
 
-          # Naukri via Apify
+          # ------------------------------------------------------------
+          # Naukri
+          #
+          # IMPORTANT:
+          # We intentionally do not send guessed input field names here.
+          # The Naukri Actor already has the working search configuration
+          # that was tested successfully in Apify. Running the Actor
+          # without an input uses that configured/default input.
+          # ------------------------------------------------------------
           apify_token = os.environ["APIFY_API_TOKEN"]
           actor_id = os.environ["NAUKRI_APIFY_ACTOR_ID"]
 
-          apify_url = (
-              "https://api.apify.com/v2/acts/"
-              + urllib.parse.quote(actor_id, safe="")
-              + "/run-sync-get-dataset-items?token="
-              + urllib.parse.quote(apify_token, safe="")
+          actor_id_encoded = urllib.parse.quote(actor_id, safe="")
+          naukri_url = (
+              f"https://api.apify.com/v2/actors/{actor_id_encoded}"
+              "/run-sync-get-dataset-items"
+              "?format=json"
           )
-
-          naukri_input = {
-              "keyword": NAUKRI_KEYWORD,
-              "location": NAUKRI_LOCATION,
-          }
 
           print("Starting Naukri scrape...")
           try:
               naukri_raw = http_json(
-                  apify_url,
-                  method="POST",
-                  payload=naukri_input,
+                  naukri_url,
+                  method="GET",
+                  headers={"Authorization": f"Bearer {apify_token}"},
                   timeout=300,
               )
+
               if not isinstance(naukri_raw, list):
                   raise RuntimeError(
-                      f"Unexpected Naukri response type: {type(naukri_raw).__name__}"
+                      "Unexpected Naukri response; expected a JSON array."
                   )
+
               naukri_jobs = [
                   normalize_naukri(x)
                   for x in naukri_raw
                   if isinstance(x, dict)
               ]
+
               print(f"Naukri jobs: {len(naukri_jobs)}")
+
+              if not naukri_jobs:
+                  raise RuntimeError("Naukri Actor completed but returned 0 jobs.")
+
           except Exception as exc:
               print(f"Naukri scrape failed: {exc}", file=sys.stderr)
               naukri_jobs = []
 
+          # ------------------------------------------------------------
           # Adzuna
+          # ------------------------------------------------------------
           app_id = os.environ["ADZUNA_APP_ID"]
           app_key = os.environ["ADZUNA_APP_KEY"]
 
@@ -204,24 +206,48 @@ jobs:
                   "results_per_page": 50,
                   "what": query,
                   "where": "India",
-                  "content-type": "application/json",
               })
 
-              url = f"https://api.adzuna.com/v1/api/jobs/in/search/1?{params}"
+              url = (
+                  "https://api.adzuna.com/v1/api/jobs/in/search/1?"
+                  + params
+              )
 
               print(f"Fetching Adzuna: {query}")
+
               try:
-                  result = http_json(url, timeout=120)
+                  result = http_json(
+                      url,
+                      headers={"Accept": "application/json"},
+                      timeout=120,
+                  )
+
+                  if not isinstance(result, dict):
+                      raise RuntimeError("Unexpected Adzuna response.")
+
                   for item in result.get("results", []):
                       item["_search_query"] = query
                       item["_search_location"] = "India"
                       adzuna_jobs.append(normalize_adzuna(item))
+
               except Exception as exc:
-                  print(f"Adzuna query failed ({query}): {exc}", file=sys.stderr)
+                  print(
+                      f"Adzuna query failed ({query}): {exc}",
+                      file=sys.stderr,
+                  )
 
           print(f"Adzuna jobs before dedupe: {len(adzuna_jobs)}")
 
-          # Merge with existing dashboard data
+          # Do not silently publish an empty result if every source failed.
+          if not naukri_jobs and not adzuna_jobs:
+              raise RuntimeError(
+                  "Both Naukri and Adzuna returned 0 jobs. "
+                  "Refusing to overwrite data/jobs.json."
+              )
+
+          # ------------------------------------------------------------
+          # Merge + deduplicate
+          # ------------------------------------------------------------
           incoming = naukri_jobs + adzuna_jobs
 
           existing = []
@@ -235,21 +261,24 @@ jobs:
               except Exception as exc:
                   print(f"Could not read existing jobs.json: {exc}")
 
-          fresh_keys = set()
-          for job in incoming:
-              key = (
+          def job_key(job):
+              return (
                   job.get("jobUrl")
                   or f'{job.get("source","")}:{job.get("jobId","")}'
+                  or (
+                      f'{job.get("companyName","")}:'
+                      f'{job.get("title","")}:'
+                      f'{job.get("location","")}'
+                  )
               )
-              if key:
-                  fresh_keys.add(key)
+
+          fresh_keys = {job_key(job) for job in incoming if job_key(job)}
 
           merged = list(incoming)
+
+          # Preserve older records that are not part of the fresh result.
           for job in existing:
-              key = (
-                  job.get("jobUrl")
-                  or f'{job.get("source","")}:{job.get("jobId","")}'
-              )
+              key = job_key(job)
               if key and key not in fresh_keys:
                   merged.append(job)
 
@@ -257,12 +286,8 @@ jobs:
           seen = set()
 
           for job in merged:
-              key = (
-                  job.get("jobUrl")
-                  or f'{job.get("source","")}:{job.get("jobId","")}'
-                  or f'{job.get("companyName","")}:{job.get("title","")}:{job.get("location","")}'
-              )
-              if key in seen:
+              key = job_key(job)
+              if not key or key in seen:
                   continue
               seen.add(key)
               unique.append(job)
@@ -279,7 +304,8 @@ jobs:
 
           print(
               f"Done. Wrote {len(unique)} jobs to {OUTPUT} "
-              f"({len(naukri_jobs)} Naukri + {len(adzuna_jobs)} Adzuna fresh records)."
+              f"({len(naukri_jobs)} Naukri + "
+              f"{len(adzuna_jobs)} Adzuna fresh records)."
           )
           PY
 
