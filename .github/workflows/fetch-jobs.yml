@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: fetch-jobs
+  cancel-in-progress: false
+
 jobs:
   fetch-jobs:
     runs-on: ubuntu-latest
@@ -37,22 +41,25 @@ jobs:
           import json
           import os
           import re
-          import requests
           import time
-          from pathlib import Path
           from datetime import datetime, timezone
+          from pathlib import Path
+
+          import requests
 
           ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "").strip()
           ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "").strip()
           APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN", "").strip()
           NAUKRI_APIFY_ACTOR_ID = os.getenv("NAUKRI_APIFY_ACTOR_ID", "").strip()
 
-          for name, value in {
+          required = {
               "ADZUNA_APP_ID": ADZUNA_APP_ID,
               "ADZUNA_APP_KEY": ADZUNA_APP_KEY,
               "APIFY_API_TOKEN": APIFY_API_TOKEN,
               "NAUKRI_APIFY_ACTOR_ID": NAUKRI_APIFY_ACTOR_ID,
-          }.items():
+          }
+
+          for name, value in required.items():
               if not value:
                   raise RuntimeError(f"{name} is empty")
 
@@ -63,8 +70,16 @@ jobs:
           ]
 
           LOCATIONS = [
-              "Ahmedabad", "Bangalore", "Pune", "Hyderabad", "Mumbai",
-              "Delhi", "Gurgaon", "Noida", "Chennai", "Remote",
+              "Ahmedabad",
+              "Bangalore",
+              "Pune",
+              "Hyderabad",
+              "Mumbai",
+              "Delhi",
+              "Gurgaon",
+              "Noida",
+              "Chennai",
+              "Remote",
           ]
 
           OUT = Path("data/jobs.json")
@@ -83,14 +98,42 @@ jobs:
               return []
 
           def normalise_naukri(item):
-              title = clean(item.get("title") or item.get("jobTitle") or item.get("job_title"))
-              company = clean(item.get("companyName") or item.get("company") or item.get("company_name"))
+              title = clean(
+                  item.get("title")
+                  or item.get("jobTitle")
+                  or item.get("job_title")
+              )
+              company = clean(
+                  item.get("companyName")
+                  or item.get("company")
+                  or item.get("company_name")
+              )
               location = clean(item.get("location") or item.get("locations"))
-              description = clean(item.get("description") or item.get("jobDescription") or item.get("descriptionText"))
-              url = clean(item.get("jobUrl") or item.get("jobURL") or item.get("job_url") or item.get("url") or item.get("original_url"))
-              job_id = clean(item.get("jobId") or item.get("jobID") or item.get("job_id"))
-              experience = clean(item.get("experienceText") or item.get("experience"))
-              posted = clean(item.get("postedDate") or item.get("posted_at") or item.get("postedAt"))
+              description = clean(
+                  item.get("description")
+                  or item.get("jobDescription")
+                  or item.get("descriptionText")
+              )
+              url = clean(
+                  item.get("jobUrl")
+                  or item.get("jobURL")
+                  or item.get("job_url")
+                  or item.get("url")
+                  or item.get("original_url")
+              )
+              job_id = clean(
+                  item.get("jobId")
+                  or item.get("jobID")
+                  or item.get("job_id")
+              )
+              experience = clean(
+                  item.get("experienceText") or item.get("experience")
+              )
+              posted = clean(
+                  item.get("postedDate")
+                  or item.get("posted_at")
+                  or item.get("postedAt")
+              )
 
               return {
                   "source": "Naukri",
@@ -109,10 +152,15 @@ jobs:
                   "salary": clean(item.get("salary")),
                   "salary_min": item.get("salaryMin"),
                   "salary_max": item.get("salaryMax"),
-                  "salary_currency": clean(item.get("salaryCurrency") or "INR"),
+                  "salary_currency": clean(
+                      item.get("salaryCurrency") or "INR"
+                  ),
                   "skills": arr(item.get("skills")),
                   "description": description,
-                  "employment_type": clean(item.get("employmentType") or item.get("employment_type")),
+                  "employment_type": clean(
+                      item.get("employmentType")
+                      or item.get("employment_type")
+                  ),
                   "posted_at": posted,
                   "original_url": url,
                   "redirect_url": url,
@@ -122,17 +170,28 @@ jobs:
               print("Starting Naukri scrape...")
               print("Using Apify Actor ID: ***")
 
-              url = f"https://api.apify.com/v2/acts/{NAUKRI_APIFY_ACTOR_ID}/runs?token={APIFY_API_TOKEN}"
+              url = (
+                  f"https://api.apify.com/v2/acts/"
+                  f"{NAUKRI_APIFY_ACTOR_ID}/runs"
+              )
 
               payload = {
                   "searchKeyword": ",".join(SEARCHES),
                   "location": ",".join(LOCATIONS),
               }
 
-              response = requests.post(url, json=payload, timeout=120)
+              response = requests.post(
+                  url,
+                  params={"token": APIFY_API_TOKEN},
+                  json=payload,
+                  timeout=120,
+              )
 
               if response.status_code >= 400:
-                  raise RuntimeError(f"HTTP {response.status_code}: {response.text[:1000]}")
+                  raise RuntimeError(
+                      f"HTTP {response.status_code}: "
+                      f"{response.text[:1000]}"
+                  )
 
               run = response.json().get("data", {})
               run_id = run.get("id")
@@ -142,45 +201,74 @@ jobs:
 
               print(f"Apify run started: {run_id}")
 
-              status_url = f"https://api.apify.com/v2/actor-runs/{run_id}?token={APIFY_API_TOKEN}"
+              status_url = (
+                  f"https://api.apify.com/v2/actor-runs/{run_id}"
+              )
 
               status = None
               data = {}
 
-              for _ in range(60):
-                  r = requests.get(status_url, timeout=60)
+              for _ in range(72):
+                  r = requests.get(
+                      status_url,
+                      params={"token": APIFY_API_TOKEN},
+                      timeout=60,
+                  )
                   r.raise_for_status()
+
                   data = r.json().get("data", {})
                   status = data.get("status")
 
-                  if status in {"SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"}:
+                  if status in {
+                      "SUCCEEDED",
+                      "FAILED",
+                      "ABORTED",
+                      "TIMED-OUT",
+                  }:
                       break
 
                   time.sleep(5)
 
               if status != "SUCCEEDED":
-                  raise RuntimeError(f"Apify Naukri run ended with status: {status}")
+                  raise RuntimeError(
+                      f"Apify Naukri run ended with status: {status}"
+                  )
 
               dataset_id = data.get("defaultDatasetId")
 
               if not dataset_id:
-                  raise RuntimeError("Apify run has no default dataset")
+                  raise RuntimeError(
+                      "Apify run has no default dataset"
+                  )
 
-              items_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items?token={APIFY_API_TOKEN}"
-              items_response = requests.get(items_url, timeout=120)
+              items_url = (
+                  f"https://api.apify.com/v2/datasets/"
+                  f"{dataset_id}/items"
+              )
+
+              items_response = requests.get(
+                  items_url,
+                  params={"token": APIFY_API_TOKEN},
+                  timeout=120,
+              )
               items_response.raise_for_status()
 
               raw = items_response.json()
+
               if not isinstance(raw, list):
                   raw = []
 
               jobs = [
-                  normalise_naukri(x)
-                  for x in raw
-                  if isinstance(x, dict)
+                  normalise_naukri(item)
+                  for item in raw
+                  if isinstance(item, dict)
               ]
 
-              jobs = [x for x in jobs if x.get("title") or x.get("original_url")]
+              jobs = [
+                  job
+                  for job in jobs
+                  if job.get("title") or job.get("original_url")
+              ]
 
               print(f"Naukri returned {len(jobs)} jobs")
               return jobs
@@ -196,20 +284,26 @@ jobs:
                   "what": query,
                   "where": location,
                   "results_per_page": 50,
-                  "content-type": "application/json",
               }
 
-              response = requests.get(url, params=params, timeout=60)
+              response = requests.get(
+                  url,
+                  params=params,
+                  headers={"Accept": "application/json"},
+                  timeout=60,
+              )
 
               if response.status_code >= 400:
                   print(
                       f"Adzuna query failed ({query} / {location}): "
-                      f"HTTP {response.status_code}: {response.text[:500]}"
+                      f"HTTP {response.status_code}: "
+                      f"{response.text[:500]}"
                   )
                   return []
 
               data = response.json()
               results = data.get("results", [])
+
               jobs = []
 
               for item in results:
@@ -217,22 +311,39 @@ jobs:
                       continue
 
                   title = clean(item.get("title"))
+
                   company_data = item.get("company") or {}
-                  company = clean(company_data.get("display_name")) if isinstance(company_data, dict) else clean(company_data)
+                  company = (
+                      clean(company_data.get("display_name"))
+                      if isinstance(company_data, dict)
+                      else clean(company_data)
+                  )
 
                   loc_data = item.get("location") or {}
-                  location_text = clean(loc_data.get("display_name")) if isinstance(loc_data, dict) else clean(loc_data)
+                  location_text = (
+                      clean(loc_data.get("display_name"))
+                      if isinstance(loc_data, dict)
+                      else clean(loc_data)
+                  )
 
                   description = clean(item.get("description"))
                   url_value = clean(item.get("redirect_url"))
                   job_id = clean(item.get("id"))
 
                   category = item.get("category") or {}
-                  category_name = clean(category.get("label")) if isinstance(category, dict) else ""
+                  category_name = (
+                      clean(category.get("label"))
+                      if isinstance(category, dict)
+                      else ""
+                  )
 
                   jobs.append({
                       "source": "Adzuna",
-                      "id": job_id or url_value or f"{title}|{company}|{location_text}",
+                      "id": (
+                          job_id
+                          or url_value
+                          or f"{title}|{company}|{location_text}"
+                      ),
                       "job_id": job_id,
                       "title": title,
                       "company": company,
@@ -244,7 +355,11 @@ jobs:
                       "experience": "",
                       "experience_min": None,
                       "experience_max": None,
-                      "salary": clean(item.get("salary_min")) if item.get("salary_min") else "",
+                      "salary": (
+                          clean(item.get("salary_min"))
+                          if item.get("salary_min")
+                          else ""
+                      ),
                       "salary_min": item.get("salary_min"),
                       "salary_max": item.get("salary_max"),
                       "salary_currency": "INR",
@@ -260,6 +375,7 @@ jobs:
               return jobs
 
           naukri_jobs = []
+
           try:
               naukri_jobs = run_naukri()
           except Exception as exc:
@@ -274,6 +390,7 @@ jobs:
           print(f"Adzuna jobs before dedupe: {len(adzuna_jobs)}")
 
           all_jobs = naukri_jobs + adzuna_jobs
+
           deduped = []
           seen = set()
 
@@ -281,7 +398,11 @@ jobs:
               key = clean(
                   job.get("id")
                   or job.get("original_url")
-                  or f"{job.get('title')}|{job.get('company')}|{job.get('location')}"
+                  or (
+                      f"{job.get('title')}|"
+                      f"{job.get('company')}|"
+                      f"{job.get('location')}"
+                  )
               ).lower()
 
               if not key or key in seen:
@@ -301,21 +422,34 @@ jobs:
           if OUT.exists():
               try:
                   old = json.loads(OUT.read_text(encoding="utf-8"))
-                  previous = old.get("jobs", []) if isinstance(old, dict) else old
+                  previous = (
+                      old.get("jobs", [])
+                      if isinstance(old, dict)
+                      else old
+                  )
                   if not isinstance(previous, list):
                       previous = []
               except Exception:
                   previous = []
 
           previous_keys = {
-              clean(x.get("id") or x.get("job_id") or x.get("original_url")).lower()
-              for x in previous
-              if isinstance(x, dict)
+              clean(
+                  item.get("id")
+                  or item.get("job_id")
+                  or item.get("original_url")
+              ).lower()
+              for item in previous
+              if isinstance(item, dict)
           }
 
           new_jobs = [
-              x for x in deduped
-              if clean(x.get("id") or x.get("job_id") or x.get("original_url")).lower()
+              item
+              for item in deduped
+              if clean(
+                  item.get("id")
+                  or item.get("job_id")
+                  or item.get("original_url")
+              ).lower()
               not in previous_keys
           ]
 
@@ -338,13 +472,18 @@ jobs:
           }
 
           OUT.write_text(
-              json.dumps(payload, ensure_ascii=False, indent=2),
+              json.dumps(
+                  payload,
+                  ensure_ascii=False,
+                  indent=2,
+              ),
               encoding="utf-8",
           )
 
           print(
               f"Final jobs: {len(deduped)} "
-              f"(Naukri: {len(naukri_jobs)}, Adzuna: {len(adzuna_jobs)})"
+              f"(Naukri: {len(naukri_jobs)}, "
+              f"Adzuna: {len(adzuna_jobs)})"
           )
           print(f"Done. Wrote {len(deduped)} jobs to {OUT}")
           PY
@@ -360,7 +499,9 @@ jobs:
           jobs = data.get("jobs", data)
 
           if not isinstance(jobs, list):
-              raise SystemExit("jobs.json does not contain a jobs array")
+              raise SystemExit(
+                  "jobs.json does not contain a jobs array"
+              )
 
           if not jobs:
               raise SystemExit("jobs.json contains zero jobs")
