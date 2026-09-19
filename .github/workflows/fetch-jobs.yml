@@ -13,8 +13,6 @@ jobs:
     steps:
       - name: Checkout dashboard
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.DASHBOARD_REPO_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -37,9 +35,6 @@ jobs:
           from pathlib import Path
           from datetime import datetime, timezone
 
-          # ------------------------------------------------------------
-          # Search configuration
-          # ------------------------------------------------------------
           NAUKRI_KEYWORD = (
               '"Senior iOS Developer",'
               '"Senior Flutter Developer",'
@@ -63,8 +58,6 @@ jobs:
               '"Remote"'
           )
 
-          # A small first-pass set for Adzuna. We can expand this after
-          # the first successful run.
           ADZUNA_QUERIES = [
               "Flutter Developer",
               "iOS Developer",
@@ -160,9 +153,7 @@ jobs:
                   "scrapedAt": datetime.now(timezone.utc).isoformat(),
               }
 
-          # ------------------------------------------------------------
-          # 1. Naukri via Apify
-          # ------------------------------------------------------------
+          # Naukri via Apify
           apify_token = os.environ["APIFY_API_TOKEN"]
           actor_id = os.environ["NAUKRI_APIFY_ACTOR_ID"]
 
@@ -200,9 +191,7 @@ jobs:
               print(f"Naukri scrape failed: {exc}", file=sys.stderr)
               naukri_jobs = []
 
-          # ------------------------------------------------------------
-          # 2. Adzuna
-          # ------------------------------------------------------------
+          # Adzuna
           app_id = os.environ["ADZUNA_APP_ID"]
           app_key = os.environ["ADZUNA_APP_KEY"]
 
@@ -232,13 +221,9 @@ jobs:
 
           print(f"Adzuna jobs before dedupe: {len(adzuna_jobs)}")
 
-          # ------------------------------------------------------------
-          # 3. Merge + deduplicate
-          # ------------------------------------------------------------
+          # Merge with existing dashboard data
           incoming = naukri_jobs + adzuna_jobs
 
-          # Read existing data so a temporary source failure does not
-          # erase the dashboard's current jobs.
           existing = []
           if OUTPUT.exists():
               try:
@@ -250,8 +235,6 @@ jobs:
               except Exception as exc:
                   print(f"Could not read existing jobs.json: {exc}")
 
-          # Prefer fresh records. Existing records are only retained when
-          # their URL/ID is not present in the fresh result.
           fresh_keys = set()
           for job in incoming:
               key = (
@@ -270,7 +253,6 @@ jobs:
               if key and key not in fresh_keys:
                   merged.append(job)
 
-          # Final defensive dedupe.
           unique = []
           seen = set()
 
@@ -285,7 +267,6 @@ jobs:
               seen.add(key)
               unique.append(job)
 
-          # Newest jobs first when a postedDate exists.
           unique.sort(
               key=lambda x: x.get("postedDate") or "",
               reverse=True,
