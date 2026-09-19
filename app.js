@@ -1,176 +1,279 @@
+/* =========================================================
+   JOB SEARCH AGENT - DASHBOARD
+   Supports:
+   - Naukri
+   - Adzuna
+   - Source filtering
+   - Deduplication
+   - Last 3 months filtering
+   - Match score fallback
+   ========================================================= */
+
 const state = {
   jobs: [],
   meta: {},
   saved: new Set(
-    JSON.parse(localStorage.getItem('job-agent-saved') || '[]') || []
-  )
+    JSON.parse(localStorage.getItem("job-agent-saved") || "[]") || []
+  ),
+  source: localStorage.getItem("job-agent-source") || "",
 };
 
-const $ = id => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
-const escapeHtml = s =>
-  String(s ?? '').replace(/[&<>'"]/g, c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    "'": '&#39;',
-    '"': '&quot;'
+const escapeHtml = (s) =>
+  String(s ?? "").replace(/[&<>'"]/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
   }[c]));
 
-const strip = s =>
-  String(s ?? '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
+const strip = (s) =>
+  String(s ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 
-const arr = v =>
-  Array.isArray(v)
-    ? v
-    : typeof v === 'string'
-      ? v.split(',').map(x => x.trim()).filter(Boolean)
-      : [];
+const arr = (v) => {
+  if (Array.isArray(v)) return v;
 
-const unique = key =>
-  [...new Set(
-    state.jobs
-      .map(j => j[key])
-      .filter(Boolean)
-  )].sort((a, b) =>
-    String(a).localeCompare(String(b))
-  );
+  if (typeof v === "string") {
+    return v
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  }
 
+  return [];
+};
 
-/* =========================================================
-   DATA NORMALIZATION
-========================================================= */
+const normalizeSource = (value) => {
+  const s = String(value ?? "").trim().toLowerCase();
 
-function normalize(payload) {
-  state.jobs = Array.isArray(payload)
-    ? payload
-    : (payload?.jobs || []);
+  if (s.includes("naukri")) return "Naukri";
+  if (s.includes("adzuna")) return "Adzuna";
 
-  state.meta = payload?.meta || {};
-}
-
-
-/* =========================================================
-   SOURCE HELPERS
-========================================================= */
-
-function normalizeSource(source) {
-  const s = String(source || '').toLowerCase().trim();
-
-  if (s.includes('naukri')) return 'Naukri';
-  if (s.includes('adzuna')) return 'Adzuna';
-
-  return source
-    ? String(source)
-    : 'Unknown';
-}
-
-function sourceKey(j) {
-  return normalizeSource(
-    j.source ||
-    j.job_source ||
-    j.source_name ||
-    ''
-  );
-}
+  return value ? String(value).trim() : "Unknown";
+};
 
 
 /* =========================================================
    DATE HELPERS
-========================================================= */
+   ========================================================= */
 
-function parseJobDate(j) {
-  const value =
-    j.posted_at ||
-    j.postedAt ||
-    j.date_posted ||
-    j.created_at ||
-    j.createdAt ||
-    j.date ||
-    '';
-
-  if (!value) return null;
-
-  const d = new Date(value);
-
-  if (Number.isNaN(d.getTime())) {
-    return null;
-  }
-
-  return d;
+function getCutoffDate() {
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setMonth(cutoff.getMonth() - 3);
+  return cutoff;
 }
 
+function parseDate(value) {
+  if (!value) return null;
 
-/*
- * Keep jobs from the last 3 months.
- *
- * Example:
- * Current date = 19 Sep 2026
- * Cutoff       = 19 Jun 2026
- */
-function isWithinLastThreeMonths(j) {
-  const posted = parseJobDate(j);
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
 
-  /*
-   * If a job has no valid date, keep it.
-   * This prevents potentially useful jobs from disappearing
-   * simply because a source did not provide a parseable date.
-   */
-  if (!posted) return true;
+  const text = String(value).trim();
 
-  const now = new Date();
+  if (!text) return null;
 
-  const cutoff = new Date(now);
-  cutoff.setMonth(cutoff.getMonth() - 3);
+  // Unix timestamp
+  if (/^\d{10,13}$/.test(text)) {
+    const n = Number(text);
+    const ms = text.length === 10 ? n * 1000 : n;
+    const d = new Date(ms);
 
-  return posted >= cutoff;
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const d = new Date(text);
+
+  if (!Number.isNaN(d.getTime())) {
+    return d;
+  }
+
+  return null;
+}
+
+function getPostedValue(j) {
+  return (
+    j.posted_at ||
+    j.postedAt ||
+    j.posted_date ||
+    j.postedDate ||
+    j.date ||
+    j.created_at ||
+    j.createdAt ||
+    j.pubDate ||
+    j.publication_date ||
+    j.updated_at ||
+    j.updatedAt ||
+    null
+  );
+}
+
+function isRecentJob(j) {
+  const value = getPostedValue(j);
+  const date = parseDate(value);
+
+  // If there is no usable date, we cannot verify
+  // that the job is within the requested 3-month window.
+  if (!date) return false;
+
+  const cutoff = getCutoffDate();
+
+  return date >= cutoff;
 }
 
 
 /* =========================================================
-   DUPLICATE HELPERS
-========================================================= */
+   NORMALIZATION
+   Converts Naukri + Adzuna records into one format.
+   ========================================================= */
+
+function normalizeJob(raw) {
+  const j = raw || {};
+
+  const source = normalizeSource(
+    j.source ||
+    j.sourceName ||
+    j.portal ||
+    j.provider
+  );
+
+  const title =
+    j.title ||
+    j.jobTitle ||
+    j.position ||
+    "Untitled role";
+
+  const company =
+    j.company ||
+    j.companyName ||
+    j.employer ||
+    j.employerName ||
+    "Company not listed";
+
+  const location =
+    j.location ||
+    j.locationName ||
+    j.city ||
+    j.place ||
+    "Location not listed";
+
+  const description = strip(
+    j.description ||
+    j.jobDescription ||
+    j.descriptionText ||
+    j.details ||
+    ""
+  );
+
+  const skills = arr(
+    j.skills ||
+    j.skill ||
+    j.keySkills ||
+    j.key_skills
+  );
+
+  const experience =
+    j.experience ||
+    j.experienceText ||
+    j.experience_text ||
+    j.exp ||
+    "";
+
+  const employmentType =
+    j.employment_type ||
+    j.employmentType ||
+    j.workMode ||
+    j.work_mode ||
+    j.jobType ||
+    j.job_type ||
+    "Full-time";
+
+  const url =
+    j.original_url ||
+    j.originalUrl ||
+    j.redirect_url ||
+    j.redirectUrl ||
+    j.url ||
+    j.jobUrl ||
+    j.job_url ||
+    "#";
+
+  const id =
+    j.id ||
+    j.job_id ||
+    j.jobId ||
+    j.guid ||
+    j.reference ||
+    url ||
+    `${title}-${company}-${location}`;
+
+  const postedAt = getPostedValue(j);
+
+  let score = Number(
+    j.match_score ??
+    j.matchScore ??
+    j.score ??
+    0
+  );
+
+  if (!Number.isFinite(score)) score = 0;
+
+  return {
+    ...j,
+
+    id: String(id),
+    source,
+    title,
+    company,
+    location,
+    description,
+    skills,
+    experience,
+    employment_type: employmentType,
+    original_url: url,
+    posted_at: postedAt,
+    match_score: score,
+
+    company_size:
+      j.company_size ||
+      j.companySize ||
+      "Company size: Unknown",
+  };
+}
+
+
+/* =========================================================
+   DEDUPLICATION
+   ========================================================= */
 
 function normalizeText(value) {
-  return String(value || '')
+  return String(value ?? "")
     .toLowerCase()
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
-function duplicateKey(j) {
-  /*
-   * Prefer a real job ID when available.
-   */
-  const realId =
-    j.id ||
-    j.job_id ||
-    j.jobId;
+function getDedupKey(j) {
+  const url = String(j.original_url || "").trim();
 
-  if (realId) {
-    return `${sourceKey(j)}|id|${normalizeText(realId)}`;
+  if (url && url !== "#") {
+    return `url:${url.toLowerCase()}`;
   }
 
-  /*
-   * Cross-source duplicate detection.
-   *
-   * We intentionally do NOT include source here.
-   * Therefore the same job found on Naukri and Adzuna
-   * can be recognized as a duplicate.
-   */
+  const source = normalizeText(j.source);
   const title = normalizeText(j.title);
-  const company = normalizeText(
-    j.company ||
-    j.companyName
-  );
+  const company = normalizeText(j.company);
   const location = normalizeText(j.location);
 
-  return `job|${title}|${company}|${location}`;
+  return `job:${source}|${title}|${company}|${location}`;
 }
 
 function deduplicateJobs(jobs) {
@@ -178,11 +281,9 @@ function deduplicateJobs(jobs) {
   const result = [];
 
   for (const job of jobs) {
-    const key = duplicateKey(job);
+    const key = getDedupKey(job);
 
-    if (seen.has(key)) {
-      continue;
-    }
+    if (seen.has(key)) continue;
 
     seen.add(key);
     result.push(job);
@@ -193,157 +294,166 @@ function deduplicateJobs(jobs) {
 
 
 /* =========================================================
-   MATCH SCORE
-========================================================= */
+   LOAD DATA
+   ========================================================= */
 
-function calculateMatchScore(j) {
-  /*
-   * Use existing score if the scraper supplied one.
-   */
-  const existing = Number(
-    j.match_score ??
-    j.matchScore ??
-    j.score
-  );
+function normalizePayload(payload) {
+  let rawJobs = [];
 
-  if (
-    Number.isFinite(existing) &&
-    existing > 0
-  ) {
-    return Math.max(0, Math.min(100, Math.round(existing)));
+  if (Array.isArray(payload)) {
+    rawJobs = payload;
+    state.meta = {};
+  } else {
+    rawJobs = payload?.jobs || [];
+    state.meta = payload?.meta || {};
   }
 
-  /*
-   * Fallback scoring for mobile-development jobs.
-   *
-   * This prevents everything from displaying as 0%
-   * when the backend did not calculate a score.
-   */
-  const text = [
-    j.title,
-    j.description,
-    j.skills,
-    j.experience,
-    j.requirements
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+  const normalized = rawJobs
+    .map(normalizeJob)
+    .filter((j) => isRecentJob(j));
 
-  if (!text.trim()) {
-    return 0;
-  }
-
-  const keywords = [
-    ['flutter', 25],
-    ['dart', 15],
-    ['ios', 20],
-    ['swift', 20],
-    ['swiftui', 20],
-    ['android', 15],
-    ['kotlin', 15],
-    ['mobile', 15],
-    ['mobile application', 15],
-    ['mobile app', 15],
-    ['react native', 20],
-    ['firebase', 5],
-    ['rest api', 5],
-    ['api', 5],
-    ['git', 5],
-    ['mvvm', 5],
-    ['bloc', 5],
-    ['provider', 5]
-  ];
-
-  let score = 0;
-
-  for (const [keyword, points] of keywords) {
-    if (text.includes(keyword)) {
-      score += points;
-    }
-  }
-
-  /*
-   * Strong title match.
-   */
-  const title = String(j.title || '').toLowerCase();
-
-  if (
-    title.includes('flutter developer') ||
-    title.includes('ios developer') ||
-    title.includes('mobile developer') ||
-    title.includes('mobile application developer') ||
-    title.includes('android developer')
-  ) {
-    score += 20;
-  }
-
-  return Math.max(
-    0,
-    Math.min(100, Math.round(score))
-  );
+  state.jobs = deduplicateJobs(normalized);
 }
 
-
-/* =========================================================
-   LOAD DATA
-========================================================= */
-
 async function load() {
-  $('jobs').innerHTML = `
-    <div class="empty">
-      <div class="empty-icon">↻</div>
-      <h2>Loading jobs…</h2>
-      <p>Fetching the latest dashboard data.</p>
-    </div>
-  `;
-
-  try {
-    const r = await fetch(
-      'data/jobs.json?ts=' + Date.now(),
-      {
-        cache: 'no-store'
-      }
-    );
-
-    if (!r.ok) {
-      throw new Error('data unavailable');
-    }
-
-    const payload = await r.json();
-
-    normalize(payload);
-
-    /*
-     * Calculate fallback scores once after loading.
-     */
-    state.jobs = state.jobs.map(job => ({
-      ...job,
-      match_score: calculateMatchScore(job)
-    }));
-
-    renderFilters();
-    render();
-
-  } catch (e) {
-    console.error(e);
-
-    $('jobs').innerHTML = `
+  if ($("jobs")) {
+    $("jobs").innerHTML = `
       <div class="empty">
-        <div class="empty-icon">!</div>
-        <h2>Dashboard data unavailable</h2>
-        <p>
-          Check that data/jobs.json exists and refresh the page.
-        </p>
+        <div class="empty-icon">↻</div>
+        <h2>Loading jobs…</h2>
+        <p>Fetching the latest dashboard data.</p>
       </div>
     `;
   }
+
+  try {
+    const response = await fetch(
+      "data/jobs.json?ts=" + Date.now(),
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("data unavailable");
+    }
+
+    const payload = await response.json();
+
+    normalizePayload(payload);
+
+    ensureSourceFilter();
+    renderFilters();
+    render();
+
+  } catch (error) {
+    console.error("Dashboard load error:", error);
+
+    if ($("jobs")) {
+      $("jobs").innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">!</div>
+          <h2>Dashboard data unavailable</h2>
+          <p>
+            Check that data/jobs.json exists and refresh the page.
+          </p>
+        </div>
+      `;
+    }
+  }
 }
 
 
 /* =========================================================
-   FILTER DROPDOWNS
-========================================================= */
+   SOURCE FILTER
+   ========================================================= */
+
+function ensureSourceFilter() {
+  let existing = $("source");
+
+  if (existing) {
+    return;
+  }
+
+  // Try to place source filter after search box.
+  const search = $("search");
+
+  if (!search || !search.parentElement) {
+    return;
+  }
+
+  const wrapper = document.createElement("div");
+
+  wrapper.className = "filter-control";
+
+  wrapper.innerHTML = `
+    <select id="source" aria-label="Filter by source">
+      <option value="">All Sources</option>
+    </select>
+  `;
+
+  search.parentElement.insertAdjacentElement(
+    "afterend",
+    wrapper
+  );
+}
+
+function populateSourceFilter() {
+  const el = $("source");
+
+  if (!el) return;
+
+  const current = state.source;
+
+  while (el.options.length > 1) {
+    el.remove(1);
+  }
+
+  const sources = [
+    ...new Set(
+      state.jobs
+        .map((j) => normalizeSource(j.source))
+        .filter((s) => s && s !== "Unknown")
+    ),
+  ].sort();
+
+  sources.forEach((source) => {
+    const option = document.createElement("option");
+
+    option.value = source;
+    option.textContent = source;
+
+    el.appendChild(option);
+  });
+
+  if (
+    current &&
+    sources.includes(current)
+  ) {
+    el.value = current;
+  } else {
+    el.value = "";
+    state.source = "";
+    localStorage.setItem("job-agent-source", "");
+  }
+}
+
+
+/* =========================================================
+   GENERIC FILTER DROPDOWNS
+   ========================================================= */
+
+function unique(key) {
+  return [
+    ...new Set(
+      state.jobs
+        .map((j) => j[key])
+        .filter(Boolean)
+    ),
+  ].sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
+}
 
 function populate(id, values) {
   const el = $(id);
@@ -356,13 +466,13 @@ function populate(id, values) {
     el.remove(1);
   }
 
-  values.forEach(v => {
-    const o = document.createElement('option');
+  values.forEach((value) => {
+    const option = document.createElement("option");
 
-    o.value = v;
-    o.textContent = v;
+    option.value = value;
+    option.textContent = value;
 
-    el.appendChild(o);
+    el.appendChild(option);
   });
 
   if (values.includes(current)) {
@@ -370,134 +480,156 @@ function populate(id, values) {
   }
 }
 
-
-/*
- * Create Source filter dynamically.
- *
- * This means index.html does NOT need to be changed.
- */
-function ensureSourceFilter() {
-  if ($('source')) {
-    return;
-  }
-
-  const sort = $('sort');
-
-  if (!sort || !sort.parentElement) {
-    return;
-  }
-
-  const wrapper = document.createElement('div');
-
-  wrapper.className = 'filter-select';
-
-  wrapper.innerHTML = `
-    <select id="source" aria-label="Filter by job source">
-      <option value="">All Sources</option>
-    </select>
-  `;
-
-  sort.parentElement.insertBefore(
-    wrapper,
-    sort.parentElement.firstChild
-  );
-
-  $('source').addEventListener(
-    'change',
-    render
-  );
-}
-
-
 function renderFilters() {
-  ensureSourceFilter();
+  populateSourceFilter();
 
   populate(
-    'location',
-    unique('location')
+    "location",
+    unique("location")
   );
 
   populate(
-    'employment',
-    unique('employment_type')
+    "employment",
+    unique("employment_type")
   );
 
   populate(
-    'experience',
-    unique('experience')
-  );
-
-  const sources = [
-    ...new Set(
-      state.jobs
-        .map(sourceKey)
-        .filter(Boolean)
-    )
-  ].sort();
-
-  populate(
-    'source',
-    sources
+    "experience",
+    unique("experience")
   );
 }
 
 
 /* =========================================================
-   FILTER JOBS
-========================================================= */
+   MATCH SCORE
+   ========================================================= */
+
+const DEFAULT_MATCH_KEYWORDS = [
+  "flutter",
+  "dart",
+  "mobile",
+  "ios",
+  "android",
+  "swift",
+  "swiftui",
+  "uikit",
+  "firebase",
+  "rest api",
+  "api",
+  "git",
+  "github",
+  "bloc",
+  "provider",
+  "riverpod",
+  "getx",
+  "mvvm",
+  "mvc",
+  "xcode",
+  "application development",
+  "mobile application",
+];
+
+function calculateFallbackMatch(j) {
+  const text = normalizeText(
+    [
+      j.title,
+      j.description,
+      ...(j.skills || []),
+      j.experience,
+    ].join(" ")
+  );
+
+  if (!text) return 0;
+
+  let matched = 0;
+
+  for (const keyword of DEFAULT_MATCH_KEYWORDS) {
+    if (text.includes(normalizeText(keyword))) {
+      matched++;
+    }
+  }
+
+  const score = Math.round(
+    (matched / DEFAULT_MATCH_KEYWORDS.length) * 100
+  );
+
+  return Math.min(100, Math.max(0, score));
+}
+
+function getMatchScore(j) {
+  const stored = Number(j.match_score);
+
+  if (
+    Number.isFinite(stored) &&
+    stored > 0
+  ) {
+    return Math.min(100, Math.max(0, Math.round(stored)));
+  }
+
+  return calculateFallbackMatch(j);
+}
+
+
+/* =========================================================
+   FILTERING
+   ========================================================= */
 
 function filteredJobs() {
-  const q = $('search')
-    .value
-    .toLowerCase()
-    .trim();
+  const searchEl = $("search");
+  const locationEl = $("location");
+  const employmentEl = $("employment");
+  const experienceEl = $("experience");
+  const sortEl = $("sort");
+  const sourceEl = $("source");
 
-  const loc = $('location').value;
-  const type = $('employment').value;
-  const exp = $('experience').value;
+  const q = searchEl
+    ? searchEl.value.toLowerCase().trim()
+    : "";
 
-  const source =
-    $('source')?.value || '';
+  const loc = locationEl
+    ? locationEl.value
+    : "";
 
-  const sort = $('sort').value;
+  const type = employmentEl
+    ? employmentEl.value
+    : "";
 
-  /*
-   * First remove old jobs.
-   */
-  const recentJobs = state.jobs.filter(
-    isWithinLastThreeMonths
-  );
+  const exp = experienceEl
+    ? experienceEl.value
+    : "";
 
-  /*
-   * Then remove duplicates.
-   */
-  const uniqueJobs = deduplicateJobs(
-    recentJobs
-  );
+  const source = sourceEl
+    ? sourceEl.value
+    : state.source;
 
-  const jobs = uniqueJobs.filter(j => {
+  const sort = sortEl
+    ? sortEl.value
+    : "score";
+
+  let jobs = state.jobs.filter((j) => {
     const hay = [
       j.title,
       j.company,
-      j.companyName,
       j.location,
       j.description,
       j.skills,
       j.source,
       j.employment_type,
-      j.experience
+      j.experience,
     ]
       .filter(Boolean)
-      .join(' ')
+      .join(" ")
       .toLowerCase();
 
     const matchesSearch =
-      !q ||
-      hay.includes(q);
+      !q || hay.includes(q);
+
+    const matchesSource =
+      !source ||
+      normalizeSource(j.source) === source;
 
     const matchesLocation =
-      !loc ||
-      j.location === loc;
+      !loc || j.location === loc;
 
     const matchesType =
       !type ||
@@ -507,62 +639,36 @@ function filteredJobs() {
       !exp ||
       j.experience === exp;
 
-    const matchesSource =
-      !source ||
-      sourceKey(j) === source;
-
     return (
       matchesSearch &&
+      matchesSource &&
       matchesLocation &&
       matchesType &&
-      matchesExperience &&
-      matchesSource
+      matchesExperience
     );
   });
 
   jobs.sort((a, b) => {
-    if (sort === 'company') {
-      return String(
-        a.company ||
-        a.companyName ||
-        ''
-      ).localeCompare(
-        String(
-          b.company ||
-          b.companyName ||
-          ''
-        )
+    if (sort === "company") {
+      return String(a.company || "").localeCompare(
+        String(b.company || "")
       );
     }
 
-    if (sort === 'title') {
-      return String(
-        a.title || ''
-      ).localeCompare(
-        String(
-          b.title || ''
-        )
+    if (sort === "title") {
+      return String(a.title || "").localeCompare(
+        String(b.title || "")
       );
     }
 
-    if (sort === 'newest') {
-      const da =
-        parseJobDate(a)?.getTime() || 0;
-
-      const db =
-        parseJobDate(b)?.getTime() || 0;
+    if (sort === "newest") {
+      const da = parseDate(a.posted_at)?.getTime() || 0;
+      const db = parseDate(b.posted_at)?.getTime() || 0;
 
       return db - da;
     }
 
-    return (
-      Number(
-        b.match_score || 0
-      ) -
-      Number(
-        a.match_score || 0
-      )
-    );
+    return getMatchScore(b) - getMatchScore(a);
   });
 
   return jobs;
@@ -570,187 +676,155 @@ function filteredJobs() {
 
 
 /* =========================================================
-   RENDER
-========================================================= */
-
-function render() {
-  const jobs = filteredJobs();
-
-  const source =
-    $('source')?.value || '';
-
-  const recentUniqueCount =
-    deduplicateJobs(
-      state.jobs.filter(
-        isWithinLastThreeMonths
-      )
-    ).length;
-
-  let countText;
-
-  if (source) {
-    countText =
-      `Showing ${jobs.length} of ${recentUniqueCount} recent unique jobs`;
-  } else {
-    countText =
-      `Showing ${jobs.length} of ${recentUniqueCount} recent unique jobs`;
-  }
-
-  $('count').textContent =
-    countText;
-
-  renderChips();
-
-  $('jobs').innerHTML =
-    jobs
-      .map((j, i) => card(j, i))
-      .join('');
-
-  $('empty')
-    .classList
-    .toggle(
-      'hidden',
-      jobs.length > 0
-    );
-
-  renderStats();
-}
-
-
-/* =========================================================
-   FILTER CHIPS
-========================================================= */
+   CHIPS
+   ========================================================= */
 
 function renderChips() {
   const chips = [];
 
-  if ($('search').value.trim()) {
+  if ($("search")?.value.trim()) {
     chips.push([
-      'Search',
-      $('search').value.trim(),
-      'search'
+      "Search",
+      $("search").value.trim(),
+      "search",
     ]);
   }
 
-  if ($('source')?.value) {
+  if ($("source")?.value) {
     chips.push([
-      'Source',
-      $('source').value,
-      'source'
+      "Source",
+      $("source").value,
+      "source",
     ]);
   }
 
-  if ($('location').value) {
+  if ($("location")?.value) {
     chips.push([
-      'Location',
-      $('location').value,
-      'location'
+      "Location",
+      $("location").value,
+      "location",
     ]);
   }
 
-  if ($('employment').value) {
+  if ($("employment")?.value) {
     chips.push([
-      'Job type',
-      $('employment').value,
-      'employment'
+      "Job type",
+      $("employment").value,
+      "employment",
     ]);
   }
 
-  if ($('experience').value) {
+  if ($("experience")?.value) {
     chips.push([
-      'Experience',
-      $('experience').value,
-      'experience'
+      "Experience",
+      $("experience").value,
+      "experience",
     ]);
   }
 
-  $('chips').innerHTML =
-    chips
-      .map(
-        ([label, val, key]) =>
-          `<span class="chip">
-            ${escapeHtml(label)}:
-            ${escapeHtml(val)}
-            <button
-              data-clear="${escapeHtml(key)}"
-              aria-label="Remove ${escapeHtml(label)} filter"
-            >×</button>
-          </span>`
-      )
-      .join('');
+  if (!$("chips")) return;
+
+  $("chips").innerHTML = chips
+    .map(
+      ([label, value, key]) =>
+        `<span class="chip">
+          ${escapeHtml(label)}:
+          ${escapeHtml(value)}
+          <button
+            data-clear="${escapeHtml(key)}"
+            aria-label="Remove ${escapeHtml(label)} filter"
+          >×</button>
+        </span>`
+    )
+    .join("");
 }
 
 
 /* =========================================================
-   COMPANY LOGO
-========================================================= */
+   LOGO
+   ========================================================= */
 
 function logoFor(j) {
-  const c = String(
-    j.company ||
-    j.companyName ||
-    'Company'
+  const company = String(
+    j.company || "Company"
   ).trim();
 
   return escapeHtml(
-    (c[0] || 'C').toUpperCase()
+    (company[0] || "C").toUpperCase()
+  );
+}
+
+
+/* =========================================================
+   POSTED DATE
+   ========================================================= */
+
+function formatPosted(value) {
+  const d = parseDate(value);
+
+  if (!d) {
+    return "Date not listed";
+  }
+
+  return d.toLocaleDateString(
+    undefined,
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }
   );
 }
 
 
 /* =========================================================
    JOB CARD
-========================================================= */
+   ========================================================= */
 
 function card(j, i) {
-  const skills =
-    arr(j.skills).slice(0, 6);
+  const skills = arr(j.skills).slice(0, 6);
 
   const exp =
-    j.experience || '';
+    j.experience || "";
 
   const type =
     j.employment_type ||
-    j.workMode ||
-    'Full-time';
+    "Full-time";
 
   const location =
     j.location ||
-    'Location not listed';
+    "Location not listed";
 
   const company =
     j.company ||
-    j.companyName ||
-    'Company not listed';
+    "Company not listed";
+
+  const source =
+    normalizeSource(j.source);
 
   const score =
-    calculateMatchScore(j);
+    getMatchScore(j);
 
   const id =
     j.id ||
     j.job_id ||
-    j.jobId ||
     j.original_url ||
-    j.redirect_url ||
-    `${j.title || 'job'}-${company}-${location}`;
+    `${j.title || "job"}-${company}`;
 
   const saved =
-    state.saved.has(
-      String(id)
-    );
+    state.saved.has(String(id));
 
   const desc =
     strip(j.description);
 
   const posted =
-    parseJobDate(j)
-      ? formatPosted(
-          parseJobDate(j)
-        )
-      : 'Date not listed';
+    j.posted_at
+      ? formatPosted(j.posted_at)
+      : "Date not listed";
 
-  const source =
-    sourceKey(j);
+  const url =
+    j.original_url ||
+    "#";
 
   return `
     <article class="job">
@@ -765,8 +839,7 @@ function card(j, i) {
 
           <h2 class="job-title">
             ${escapeHtml(
-              j.title ||
-              'Untitled role'
+              j.title || "Untitled role"
             )}
           </h2>
 
@@ -795,8 +868,7 @@ function card(j, i) {
           <span class="meta-item">
             <span class="meta-icon">◒</span>
             ${escapeHtml(
-              exp ||
-              'Experience not listed'
+              exp || "Experience not listed"
             )}
           </span>
 
@@ -804,21 +876,11 @@ function card(j, i) {
             <span class="meta-icon">♧</span>
             ${escapeHtml(
               j.company_size ||
-              'Company size: Unknown'
+              "Company size: Unknown"
             )}
           </span>
 
         </div>
-
-        ${
-          source
-            ? `
-              <div class="job-source">
-                ${escapeHtml(source)}
-              </div>
-            `
-            : ''
-        }
 
         ${
           skills.length
@@ -826,19 +888,19 @@ function card(j, i) {
               <div class="skills">
                 ${skills
                   .map(
-                    (s, n) =>
+                    (skill, n) =>
                       `<span class="tag${
                         n > 3
-                          ? ' neutral'
-                          : ''
+                          ? " neutral"
+                          : ""
                       }">
-                        ${escapeHtml(s)}
+                        ${escapeHtml(skill)}
                       </span>`
                   )
-                  .join('')}
+                  .join("")}
               </div>
             `
-            : ''
+            : ""
         }
 
         ${
@@ -848,7 +910,7 @@ function card(j, i) {
                 ${escapeHtml(desc)}
               </div>
             `
-            : ''
+            : ""
         }
 
       </div>
@@ -859,35 +921,36 @@ function card(j, i) {
           ${escapeHtml(posted)}
         </div>
 
+        <div class="job-source">
+          ${escapeHtml(source)}
+        </div>
+
         <button
-          class="bookmark ${saved ? 'saved' : ''}"
+          class="bookmark ${
+            saved ? "saved" : ""
+          }"
           data-save="${escapeHtml(
             String(id)
           )}"
           title="${
             saved
-              ? 'Remove saved job'
-              : 'Save job'
+              ? "Remove saved job"
+              : "Save job"
           }"
           aria-label="${
             saved
-              ? 'Remove saved job'
-              : 'Save job'
+              ? "Remove saved job"
+              : "Save job"
           }"
         >
-          ${saved ? '★' : '☆'}
+          ${saved ? "★" : "☆"}
         </button>
 
         <a
           class="view"
-          href="${escapeHtml(
-            j.original_url ||
-            j.redirect_url ||
-            j.url ||
-            '#'
-          )}"
+          href="${escapeHtml(url)}"
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
         >
           View Job ↗
         </a>
@@ -900,117 +963,122 @@ function card(j, i) {
 
 
 /* =========================================================
-   DATE DISPLAY
-========================================================= */
+   RENDER
+   ========================================================= */
 
-function formatPosted(value) {
-  const d =
-    value instanceof Date
-      ? value
-      : new Date(value);
+function render() {
+  const jobs = filteredJobs();
 
-  if (
-    Number.isNaN(
-      d.getTime()
-    )
-  ) {
-    return 'Date not listed';
+  if ($("count")) {
+    $("count").textContent =
+      `Showing ${jobs.length} of ${
+        state.jobs.length
+      } matched job${
+        state.jobs.length === 1
+          ? ""
+          : "s"
+      }`;
   }
 
-  return d.toLocaleDateString(
-    undefined,
-    {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    }
-  );
+  renderChips();
+
+  if ($("jobs")) {
+    $("jobs").innerHTML =
+      jobs.map(card).join("");
+  }
+
+  if ($("empty")) {
+    $("empty").classList.toggle(
+      "hidden",
+      jobs.length > 0
+    );
+  }
+
+  renderStats();
 }
 
 
 /* =========================================================
    STATS
-========================================================= */
+   ========================================================= */
 
 function renderStats() {
-  const m =
-    state.meta || {};
+  const m = state.meta || {};
 
-  const allRecent =
-    state.jobs.filter(
-      isWithinLastThreeMonths
-    );
+  const sourceCounts = {};
 
-  const uniqueRecent =
-    deduplicateJobs(
-      allRecent
-    );
+  state.jobs.forEach((job) => {
+    const source =
+      normalizeSource(job.source);
+
+    sourceCounts[source] =
+      (sourceCounts[source] || 0) + 1;
+  });
 
   const sources =
-    Object.keys(
-      m.sources || {}
+    Object.keys(sourceCounts);
+
+  const total =
+    state.jobs.length;
+
+  const uniqueIds =
+    new Set(
+      state.jobs.map(getDedupKey)
     );
 
-  const source =
+  const currentSource =
+    state.source ||
     sources[0] ||
-    state.jobs.find(
-      j => j.source
-    )?.source ||
-    'Naukri + Adzuna';
+    "All Sources";
 
-  /*
-   * Count source totals from the actual data.
-   */
-  const naukriCount =
-    uniqueRecent.filter(
-      j => sourceKey(j) === 'Naukri'
-    ).length;
-
-  const adzunaCount =
-    uniqueRecent.filter(
-      j => sourceKey(j) === 'Adzuna'
-    ).length;
+  const sourceLabel =
+    currentSource === ""
+      ? "All Sources"
+      : currentSource;
 
   const cards = [
     [
-      '▣',
-      'Jobs Collected',
-      state.jobs.length,
-      'Raw jobs from Naukri + Adzuna'
+      "▣",
+      "Jobs Collected",
+      m.collected_jobs ??
+        m.total_jobs ??
+        total,
+      "After 3-month filter",
     ],
     [
-      '▤',
-      'Unique Jobs',
-      uniqueRecent.length,
-      'Recent jobs after deduplication'
+      "▤",
+      "Unique Jobs",
+      uniqueIds.size,
+      "After deduplication",
     ],
     [
-      '✦',
-      'New Jobs',
-      m.new_jobs ??
-      uniqueRecent.length,
-      'Available in latest run'
+      "✦",
+      "Recent Jobs",
+      total,
+      "Posted in last 3 months",
     ],
     [
-      '☆',
-      'Matched Jobs',
-      uniqueRecent.length,
-      'Jobs from the last 3 months'
+      "☆",
+      "Matched Jobs",
+      total,
+      "Available jobs",
     ],
     [
-      '◎',
-      'Source Status',
-      `${naukriCount} Naukri · ${adzunaCount} Adzuna`,
-      'Sources available'
-    ]
+      "◎",
+      "Source Status",
+      sourceLabel,
+      sources.length
+        ? sources.join(" + ")
+        : "No source data",
+    ],
   ];
 
-  $('stats').innerHTML =
-    cards
-      .map(
-        (c, i) =>
-          i === 4
-            ? `
+  if ($("stats")) {
+    $("stats").innerHTML =
+      cards
+        .map((c, i) => {
+          if (i === 4) {
+            return `
               <div class="stat">
 
                 <div class="stat-icon">
@@ -1024,52 +1092,68 @@ function renderStats() {
                   </div>
 
                   <div class="source-status">
+
                     <span class="mini-dot"></span>
-                    ${escapeHtml(c[2])}
+
+                    ${escapeHtml(
+                      c[2]
+                    )}
+
                     <span class="enabled">
                       Enabled
                     </span>
+
                   </div>
 
                   <div class="stat-sub">
-                    ${escapeHtml(c[3])}
+                    ${escapeHtml(
+                      c[3]
+                    )}
                   </div>
 
                 </div>
 
               </div>
-            `
-            : `
-              <div class="stat">
+            `;
+          }
 
-                <div class="stat-icon">
-                  ${c[0]}
+          return `
+            <div class="stat">
+
+              <div class="stat-icon">
+                ${c[0]}
+              </div>
+
+              <div class="stat-copy">
+
+                <div class="stat-label">
+                  ${c[1]}
                 </div>
 
-                <div class="stat-copy">
+                <div class="stat-value">
+                  ${escapeHtml(c[2])}
+                </div>
 
-                  <div class="stat-label">
-                    ${c[1]}
-                  </div>
-
-                  <div class="stat-value">
-                    ${escapeHtml(c[2])}
-                  </div>
-
-                  <div class="stat-sub">
-                    ${escapeHtml(c[3])}
-                  </div>
-
+                <div class="stat-sub">
+                  ${escapeHtml(c[3])}
                 </div>
 
               </div>
-            `
-      )
-      .join('');
 
-  if ($('sourceName')) {
-    $('sourceName').textContent =
-      source;
+            </div>
+          `;
+        })
+        .join("");
+  }
+
+  const primarySource =
+    sources.length === 1
+      ? sources[0]
+      : "Naukri + Adzuna";
+
+  if ($("sourceName")) {
+    $("sourceName").textContent =
+      primarySource;
   }
 
   const raw =
@@ -1077,49 +1161,78 @@ function renderStats() {
     m.updated_at ||
     m.updated_at_utc;
 
-  const formatted =
-    raw
-      ? new Date(raw).toLocaleString(
-          undefined,
-          {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-            timeZoneName: 'short'
-          }
-        )
-      : 'Waiting for first run';
+  const formatted = raw
+    ? formatUpdatedDate(raw)
+    : "Waiting for first run";
 
-  if ($('updated')) {
-    $('updated').textContent =
+  if ($("updated")) {
+    $("updated").textContent =
       formatted;
   }
 
-  if ($('footerUpdated')) {
-    $('footerUpdated').textContent =
-      'Last updated: ' +
-      formatted;
+  if ($("footerUpdated")) {
+    $("footerUpdated").textContent =
+      "Last updated: " + formatted;
   }
+}
+
+function formatUpdatedDate(value) {
+  const d = parseDate(value);
+
+  if (!d) {
+    return "Waiting for first run";
+  }
+
+  return d.toLocaleString(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZoneName: "short",
+    }
+  );
 }
 
 
 /* =========================================================
    CLEAR FILTERS
-========================================================= */
+   ========================================================= */
 
 function clearFilters() {
-  $('search').value = '';
-  $('location').value = '';
-  $('employment').value = '';
-  $('experience').value = '';
-  $('sort').value = 'score';
-
-  if ($('source')) {
-    $('source').value = '';
+  if ($("search")) {
+    $("search").value = "";
   }
+
+  if ($("source")) {
+    $("source").value = "";
+  }
+
+  if ($("location")) {
+    $("location").value = "";
+  }
+
+  if ($("employment")) {
+    $("employment").value = "";
+  }
+
+  if ($("experience")) {
+    $("experience").value = "";
+  }
+
+  if ($("sort")) {
+    $("sort").value = "score";
+  }
+
+  state.source = "";
+
+  localStorage.setItem(
+    "job-agent-source",
+    ""
+  );
 
   render();
 }
@@ -1127,122 +1240,167 @@ function clearFilters() {
 
 /* =========================================================
    EVENT LISTENERS
-========================================================= */
+   ========================================================= */
 
-$('search')
-  .addEventListener(
-    'input',
+if ($("search")) {
+  $("search").addEventListener(
+    "input",
     render
   );
+}
 
 [
-  'location',
-  'employment',
-  'experience',
-  'sort'
-].forEach(id => {
-  $(id).addEventListener(
-    'change',
-    render
-  );
+  "location",
+  "employment",
+  "experience",
+  "sort",
+].forEach((id) => {
+  if ($(id)) {
+    $(id).addEventListener(
+      "change",
+      render
+    );
+  }
 });
 
-$('clear')
-  .addEventListener(
-    'click',
+
+/* SOURCE FILTER */
+
+document.addEventListener(
+  "change",
+  (event) => {
+    if (
+      event.target &&
+      event.target.id === "source"
+    ) {
+      state.source =
+        event.target.value || "";
+
+      localStorage.setItem(
+        "job-agent-source",
+        state.source
+      );
+
+      render();
+    }
+  }
+);
+
+
+/* CLEAR BUTTON */
+
+if ($("clear")) {
+  $("clear").addEventListener(
+    "click",
     clearFilters
   );
+}
 
-$('emptyClear')
-  .addEventListener(
-    'click',
+if ($("emptyClear")) {
+  $("emptyClear").addEventListener(
+    "click",
     clearFilters
   );
+}
 
-$('refresh')
-  .addEventListener(
-    'click',
+
+/* REFRESH */
+
+if ($("refresh")) {
+  $("refresh").addEventListener(
+    "click",
     () => load()
   );
+}
 
-$('runSearch')
-  .addEventListener(
-    'click',
+
+/* RUN SEARCH */
+
+if ($("runSearch")) {
+  $("runSearch").addEventListener(
+    "click",
     () => load()
   );
+}
 
 
-/* =========================================================
-   FILTER CHIP CLICK
-========================================================= */
+/* FILTER CHIPS */
 
-$('chips')
-  .addEventListener(
-    'click',
-    e => {
+if ($("chips")) {
+  $("chips").addEventListener(
+    "click",
+    (event) => {
       const key =
-        e.target.dataset.clear;
+        event.target.dataset.clear;
 
       if (!key) return;
 
-      if (key === 'search') {
-        $('search').value = '';
-      } else if (
-        key === 'source' &&
-        $('source')
-      ) {
-        $('source').value = '';
+      if (key === "search") {
+        if ($("search")) {
+          $("search").value = "";
+        }
+      } else if (key === "source") {
+        state.source = "";
+
+        localStorage.setItem(
+          "job-agent-source",
+          ""
+        );
+
+        if ($("source")) {
+          $("source").value = "";
+        }
       } else {
-        $(key).value = '';
+        const el = $(key);
+
+        if (el) {
+          el.value = "";
+        }
       }
 
       render();
     }
   );
+}
 
 
-/* =========================================================
-   SAVE / BOOKMARK JOB
-========================================================= */
+/* SAVE / UNSAVE JOB */
 
-$('jobs')
-  .addEventListener(
-    'click',
-    e => {
+if ($("jobs")) {
+  $("jobs").addEventListener(
+    "click",
+    (event) => {
       const btn =
-        e.target.closest(
-          '[data-save]'
+        event.target.closest(
+          "[data-save]"
         );
 
       if (!btn) return;
 
       const id =
-        String(
-          btn.dataset.save
-        );
+        String(btn.dataset.save);
 
-      if (
-        state.saved.has(id)
-      ) {
+      if (state.saved.has(id)) {
         state.saved.delete(id);
       } else {
         state.saved.add(id);
       }
 
       localStorage.setItem(
-        'job-agent-saved',
-        JSON.stringify(
-          [...state.saved]
-        )
+        "job-agent-saved",
+        JSON.stringify([
+          ...state.saved,
+        ])
       );
 
       render();
     }
   );
+}
 
 
 /* =========================================================
    START
-========================================================= */
+   ========================================================= */
 
 load();
