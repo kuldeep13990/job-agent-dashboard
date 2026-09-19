@@ -551,6 +551,8 @@ function populate(id, values, allLabel) {
 
 /*
   Ensure source filter exists even if the HTML version is old.
+  The Source filter is created as a sibling of the search box
+  (never inside it), by cloning an existing filter box.
 */
 
 function ensureSourceFilter() {
@@ -558,12 +560,16 @@ function ensureSourceFilter() {
   if (source) return source;
 
   const search = $('search');
-  const reference = $('location') || $('employment') || $('experience');
+  const reference =
+    $('location') ||
+    $('employment') ||
+    $('experience');
+
   if (!search || !reference) return null;
 
   /*
-    Find the outer box of the search field and of a reference filter,
-    i.e. the direct children of the shared filter row.
+    Find the outer box of the search field: the direct child
+    of the row that also contains the reference filter.
   */
   let searchBox = search;
   while (
@@ -574,6 +580,7 @@ function ensureSourceFilter() {
   }
 
   const row = searchBox.parentElement;
+  if (!row) return null;
 
   let refBox = reference;
   while (refBox.parentElement && refBox.parentElement !== row) {
@@ -585,21 +592,158 @@ function ensureSourceFilter() {
     Source filter looks exactly like the others.
   */
   const box = refBox.cloneNode(true);
-  source = box.matches('select') ? box : box.querySelector('select');
+
+  source = box.matches('select')
+    ? box
+    : box.querySelector('select');
+
+  if (!source) return null;
 
   source.id = 'source';
   source.setAttribute('aria-label', 'Job source');
   source.innerHTML = '<option value="">All Sources</option>';
   source.value = '';
 
-  /*
-    Put the new box AFTER the search box, as a sibling, not inside it.
-  */
   row.insertBefore(box, searchBox.nextSibling);
 
   source.addEventListener('change', render);
 
   return source;
+}
+
+/*
+  ============================================================
+  FILTER LAYOUT
+  Search bar = full width (first line)
+  Source / Location / Job Type / Experience / Sort / Clear
+  = second line, below the search bar
+  ============================================================
+*/
+
+function injectFilterStyles() {
+  if ($('filter-layout-styles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'filter-layout-styles';
+
+  style.textContent = `
+    .filter-row-stacked {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      flex-wrap: nowrap !important;
+      gap: 12px !important;
+    }
+
+    .filter-search-full {
+      width: 100% !important;
+      max-width: none !important;
+      min-width: 0 !important;
+      flex: none !important;
+      box-sizing: border-box !important;
+    }
+
+    .filter-controls {
+      display: grid;
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr))
+        minmax(0, 1.25fr)
+        minmax(0, 0.7fr);
+      gap: 12px;
+      width: 100%;
+    }
+
+    .filter-controls > * {
+      width: auto !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      flex: none !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    .filter-controls select,
+    .filter-controls input {
+      min-width: 0 !important;
+      max-width: 100% !important;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 1250px) {
+      .filter-controls {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .filter-controls {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .filter-controls {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function layoutFilters() {
+  const search = $('search');
+  const reference =
+    $('location') ||
+    $('employment') ||
+    $('experience');
+
+  if (!search || !reference) return;
+
+  injectFilterStyles();
+
+  /*
+    Outer box of the search field (direct child of the filter row).
+  */
+  let searchBox = search;
+  while (
+    searchBox.parentElement &&
+    !searchBox.parentElement.contains(reference)
+  ) {
+    searchBox = searchBox.parentElement;
+  }
+
+  const row = searchBox.parentElement;
+  if (!row) return;
+
+  /*
+    Already rearranged: nothing to do.
+  */
+  if (row.dataset.layout === 'stacked') return;
+
+  const controls = document.createElement('div');
+  controls.className = 'filter-controls';
+
+  ['source', 'location', 'employment', 'experience', 'sort', 'clear']
+    .forEach(id => {
+      const el = $(id);
+      if (!el) return;
+
+      let box = el;
+      while (box.parentElement && box.parentElement !== row) {
+        box = box.parentElement;
+      }
+
+      if (box.parentElement === row && box !== searchBox) {
+        controls.appendChild(box);
+      }
+    });
+
+  searchBox.classList.add('filter-search-full');
+  row.classList.add('filter-row-stacked');
+  row.dataset.layout = 'stacked';
+
+  row.appendChild(controls);
 }
 
 function renderFilters() {
@@ -628,15 +772,9 @@ function renderFilters() {
   );
 
   /*
-    Make sorting filter readable.
+    Search on its own full-width line, all other filters below.
   */
-
-  const sort = $('sort');
-
-  if (sort) {
-    sort.style.minWidth = '145px';
-    sort.style.width = '145px';
-  }
+  layoutFilters();
 }
 
 /*
@@ -1035,7 +1173,7 @@ function renderStats() {
 
   /*
     If one source is selected, show that source.
-    Otherwise show both sources.
+    Otherwise show all sources.
   */
 
   const selectedSource =
