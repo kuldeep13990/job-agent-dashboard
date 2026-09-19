@@ -3,34 +3,76 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f7f9fc">
   <title>Job Search Agent</title>
   <meta name="description" content="Personal iOS and Flutter job discovery dashboard.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <aside class="sidebar">
-    <div class="brand"><span class="brand-mark">J</span><div><strong>Job Agent</strong><small>Personal workspace</small></div></div>
-    <nav><a class="active" href="#jobs">Jobs</a><a href="#saved">Saved</a></nav>
-    <div class="side-note"><strong>Manual apply</strong><span>You review every listing before applying.</span></div>
-  </aside>
-  <main class="main">
-    <header class="hero">
-      <div><p class="eyebrow">JOB DISCOVERY</p><h1>Find your next opportunity.</h1><p class="subtitle">iOS & Flutter roles matched to your profile.</p></div>
-      <div class="updated" id="updated">Loading…</div>
-    </header>
-    <section class="stats" id="stats"></section>
-    <section class="toolbar">
-      <label class="search"><span>⌕</span><input id="search" placeholder="Search jobs, companies, skills…"></label>
-      <select id="source"><option value="">All sources</option></select>
-      <select id="location"><option value="">All locations</option></select>
-      <select id="score"><option value="0">Any match</option><option value="80">80%+</option><option value="70">70%+</option><option value="60">60%+</option></select>
-      <select id="sort"><option value="score">Best match</option><option value="newest">Newest</option><option value="company">Company</option><option value="title">Title</option></select>
-    </section>
-    <div class="resultbar"><span id="count">0 jobs</span><span id="sourceSummary"></span></div>
-    <section id="jobs" class="jobs"></section>
-    <section id="empty" class="empty hidden"><h2>No matching jobs</h2><p>Try changing the search or filters.</p></section>
-    <footer>Job Agent <span>•</span> Data is refreshed by GitHub Actions <span>•</span> Open each listing on its original platform</footer>
-  </main>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">▣</span>
+        <div><strong>Job Search Agent</strong><small>Personal workspace</small></div>
+      </div>
+      <nav>
+        <a class="active" href="#jobs"><span class="nav-icon">⌁</span>Jobs</a>
+        <a href="#analytics" class="disabled-link"><span class="nav-icon">◒</span>Analytics</a>
+        <a href="#settings" class="disabled-link"><span class="nav-icon">⚙</span>Search Settings</a>
+        <a href="#profile" class="disabled-link"><span class="nav-icon">▤</span>Resume Profile</a>
+        <a href="#sources" class="disabled-link"><span class="nav-icon">▱</span>Sources <i class="status-dot"></i></a>
+        <a href="#about" class="disabled-link"><span class="nav-icon">ⓘ</span>About</a>
+      </nav>
+      <div class="side-quote">
+        <p>“Better opportunities are out there.”</p>
+        <span>— Job Search Agent</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">▣</span><strong>Job Search Agent</strong></div>
+        <div class="top-actions">
+          <div class="last-updated"><span class="calendar-icon">□</span><span><small>Last updated</small><b id="updated">Loading…</b></span></div>
+          <div class="source-pill"><span class="live-dot"></span><b id="sourceName">Adzuna</b><span class="enabled">Enabled</span></div>
+          <button class="icon-button" id="refresh" title="Refresh dashboard data" aria-label="Refresh dashboard data">↻</button>
+          <button class="run-button" id="runSearch"><span>▶</span> Run Search</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="mobile-heading">
+          <p class="eyebrow">JOB DISCOVERY</p>
+          <h1>Find your next opportunity.</h1>
+          <p>iOS &amp; Flutter roles matched to your profile.</p>
+        </div>
+
+        <section class="stats" id="stats" aria-label="Job statistics"></section>
+
+        <section class="toolbar" aria-label="Job filters">
+          <label class="search-field"><span>⌕</span><input id="search" autocomplete="off" placeholder="Search jobs by title, company, or keywords…" aria-label="Search jobs"></label>
+          <label class="select-wrap"><span>⌖</span><select id="location" aria-label="Filter by location"><option value="">All Locations</option></select></label>
+          <label class="select-wrap"><span>▣</span><select id="employment" aria-label="Filter by job type"><option value="">All Job Types</option></select></label>
+          <label class="select-wrap"><span>◒</span><select id="experience" aria-label="Filter by experience"><option value="">All Experience</option></select></label>
+          <label class="select-wrap sort-wrap"><span>↕</span><select id="sort" aria-label="Sort jobs"><option value="score">Match Score</option><option value="newest">Newest</option><option value="company">Company</option><option value="title">Title</option></select></label>
+          <button class="clear-button" id="clear">Clear Filters</button>
+        </section>
+
+        <div class="chips-row">
+          <div class="chips" id="chips"></div>
+          <div class="result-count" id="count">0 jobs</div>
+        </div>
+
+        <section id="jobs" class="jobs" aria-live="polite"></section>
+        <section id="empty" class="empty hidden"><div class="empty-icon">⌕</div><h2>No matching jobs</h2><p>Try changing the search or filters.</p><button class="clear-button" id="emptyClear">Clear filters</button></section>
+      </section>
+
+      <footer>
+        <div><strong>Job Search Agent</strong> <span class="version">v0.4.2</span><small>Powered by Adzuna · Built for your career growth</small></div>
+        <div class="footer-actions"><a href="https://github.com/kuldeep13990/job-agent-dashboard" target="_blank" rel="noopener">⌂ View on GitHub</a><a href="#settings">⚙ Edit Settings</a><a href="https://github.com/kuldeep13990/job-agent/actions" target="_blank" rel="noopener">▷ Run Workflow</a><span id="footerUpdated">Last updated: —</span></div>
+      </footer>
+    </main>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>
