@@ -1,122 +1,482 @@
-const state={jobs:[],meta:{},saved:new Set(JSON.parse(localStorage.getItem('job-agent-saved')||'[]')||[])};
-const $=id=>document.getElementById(id);
-const escapeHtml=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-const strip=s=>String(s??'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
-const arr=v=>Array.isArray(v)?v:(typeof v==='string'?v.split(',').map(x=>x.trim()).filter(Boolean):[]);
-const unique=key=>[...new Set(state.jobs.map(j=>j[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
+const state = {
+  jobs: [],
+  meta: {},
+  saved: new Set(
+    JSON.parse(localStorage.getItem('job-agent-saved') || '[]') || []
+  )
+};
 
-function sourceOf(j){
-  return String(j.source||j.provider||'').trim()||'Unknown';
+const $ = id => document.getElementById(id);
+
+const escapeHtml = s =>
+  String(s ?? '').replace(/[&<>'"]/g, c => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[c]));
+
+const strip = s =>
+  String(s ?? '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const arr = v =>
+  Array.isArray(v)
+    ? v
+    : typeof v === 'string'
+      ? v.split(',').map(x => x.trim()).filter(Boolean)
+      : [];
+
+const unique = key =>
+  [...new Set(
+    state.jobs
+      .map(j => j[key])
+      .filter(Boolean)
+  )].sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
+
+
+/* =========================================================
+   DATA NORMALIZATION
+========================================================= */
+
+function normalize(payload) {
+  state.jobs = Array.isArray(payload)
+    ? payload
+    : (payload?.jobs || []);
+
+  state.meta = payload?.meta || {};
 }
 
-function jobUrl(j){
-  return j.original_url||j.job_url||j.jobUrl||j.url||j.redirect_url||'#';
+
+/* =========================================================
+   SOURCE HELPERS
+========================================================= */
+
+function normalizeSource(source) {
+  const s = String(source || '').toLowerCase().trim();
+
+  if (s.includes('naukri')) return 'Naukri';
+  if (s.includes('adzuna')) return 'Adzuna';
+
+  return source
+    ? String(source)
+    : 'Unknown';
 }
 
-function normalize(payload){
-  state.jobs=Array.isArray(payload)?payload:(payload?.jobs||[]);
-  state.meta=payload?.meta||{};
+function sourceKey(j) {
+  return normalizeSource(
+    j.source ||
+    j.job_source ||
+    j.source_name ||
+    ''
+  );
 }
 
-async function load(){
-  $('jobs').innerHTML='<div class="empty"><div class="empty-icon">↻</div><h2>Loading jobs…</h2><p>Fetching the latest dashboard data.</p></div>';
 
-  try{
-    const r=await fetch('data/jobs.json?ts='+Date.now(),{cache:'no-store'});
+/* =========================================================
+   DATE HELPERS
+========================================================= */
 
-    if(!r.ok)throw new Error('data unavailable');
+function parseJobDate(j) {
+  const value =
+    j.posted_at ||
+    j.postedAt ||
+    j.date_posted ||
+    j.created_at ||
+    j.createdAt ||
+    j.date ||
+    '';
 
-    normalize(await r.json());
+  if (!value) return null;
+
+  const d = new Date(value);
+
+  if (Number.isNaN(d.getTime())) {
+    return null;
+  }
+
+  return d;
+}
+
+
+/*
+ * Keep jobs from the last 3 months.
+ *
+ * Example:
+ * Current date = 19 Sep 2026
+ * Cutoff       = 19 Jun 2026
+ */
+function isWithinLastThreeMonths(j) {
+  const posted = parseJobDate(j);
+
+  /*
+   * If a job has no valid date, keep it.
+   * This prevents potentially useful jobs from disappearing
+   * simply because a source did not provide a parseable date.
+   */
+  if (!posted) return true;
+
+  const now = new Date();
+
+  const cutoff = new Date(now);
+  cutoff.setMonth(cutoff.getMonth() - 3);
+
+  return posted >= cutoff;
+}
+
+
+/* =========================================================
+   DUPLICATE HELPERS
+========================================================= */
+
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function duplicateKey(j) {
+  /*
+   * Prefer a real job ID when available.
+   */
+  const realId =
+    j.id ||
+    j.job_id ||
+    j.jobId;
+
+  if (realId) {
+    return `${sourceKey(j)}|id|${normalizeText(realId)}`;
+  }
+
+  /*
+   * Cross-source duplicate detection.
+   *
+   * We intentionally do NOT include source here.
+   * Therefore the same job found on Naukri and Adzuna
+   * can be recognized as a duplicate.
+   */
+  const title = normalizeText(j.title);
+  const company = normalizeText(
+    j.company ||
+    j.companyName
+  );
+  const location = normalizeText(j.location);
+
+  return `job|${title}|${company}|${location}`;
+}
+
+function deduplicateJobs(jobs) {
+  const seen = new Set();
+  const result = [];
+
+  for (const job of jobs) {
+    const key = duplicateKey(job);
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(job);
+  }
+
+  return result;
+}
+
+
+/* =========================================================
+   MATCH SCORE
+========================================================= */
+
+function calculateMatchScore(j) {
+  /*
+   * Use existing score if the scraper supplied one.
+   */
+  const existing = Number(
+    j.match_score ??
+    j.matchScore ??
+    j.score
+  );
+
+  if (
+    Number.isFinite(existing) &&
+    existing > 0
+  ) {
+    return Math.max(0, Math.min(100, Math.round(existing)));
+  }
+
+  /*
+   * Fallback scoring for mobile-development jobs.
+   *
+   * This prevents everything from displaying as 0%
+   * when the backend did not calculate a score.
+   */
+  const text = [
+    j.title,
+    j.description,
+    j.skills,
+    j.experience,
+    j.requirements
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (!text.trim()) {
+    return 0;
+  }
+
+  const keywords = [
+    ['flutter', 25],
+    ['dart', 15],
+    ['ios', 20],
+    ['swift', 20],
+    ['swiftui', 20],
+    ['android', 15],
+    ['kotlin', 15],
+    ['mobile', 15],
+    ['mobile application', 15],
+    ['mobile app', 15],
+    ['react native', 20],
+    ['firebase', 5],
+    ['rest api', 5],
+    ['api', 5],
+    ['git', 5],
+    ['mvvm', 5],
+    ['bloc', 5],
+    ['provider', 5]
+  ];
+
+  let score = 0;
+
+  for (const [keyword, points] of keywords) {
+    if (text.includes(keyword)) {
+      score += points;
+    }
+  }
+
+  /*
+   * Strong title match.
+   */
+  const title = String(j.title || '').toLowerCase();
+
+  if (
+    title.includes('flutter developer') ||
+    title.includes('ios developer') ||
+    title.includes('mobile developer') ||
+    title.includes('mobile application developer') ||
+    title.includes('android developer')
+  ) {
+    score += 20;
+  }
+
+  return Math.max(
+    0,
+    Math.min(100, Math.round(score))
+  );
+}
+
+
+/* =========================================================
+   LOAD DATA
+========================================================= */
+
+async function load() {
+  $('jobs').innerHTML = `
+    <div class="empty">
+      <div class="empty-icon">↻</div>
+      <h2>Loading jobs…</h2>
+      <p>Fetching the latest dashboard data.</p>
+    </div>
+  `;
+
+  try {
+    const r = await fetch(
+      'data/jobs.json?ts=' + Date.now(),
+      {
+        cache: 'no-store'
+      }
+    );
+
+    if (!r.ok) {
+      throw new Error('data unavailable');
+    }
+
+    const payload = await r.json();
+
+    normalize(payload);
+
+    /*
+     * Calculate fallback scores once after loading.
+     */
+    state.jobs = state.jobs.map(job => ({
+      ...job,
+      match_score: calculateMatchScore(job)
+    }));
+
     renderFilters();
     render();
 
-  }catch(e){
+  } catch (e) {
+    console.error(e);
 
-    $('jobs').innerHTML='<div class="empty"><div class="empty-icon">!</div><h2>Dashboard data unavailable</h2><p>Check that data/jobs.json exists and refresh the page.</p></div>';
-
+    $('jobs').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">!</div>
+        <h2>Dashboard data unavailable</h2>
+        <p>
+          Check that data/jobs.json exists and refresh the page.
+        </p>
+      </div>
+    `;
   }
 }
 
-function populate(id,values){
-  const el=$(id);
 
-  if(!el)return;
+/* =========================================================
+   FILTER DROPDOWNS
+========================================================= */
 
-  const current=el.value;
+function populate(id, values) {
+  const el = $(id);
 
-  while(el.options.length>1)el.remove(1);
+  if (!el) return;
 
-  values.forEach(v=>{
-    const o=document.createElement('option');
-    o.value=v;
-    o.textContent=v;
+  const current = el.value;
+
+  while (el.options.length > 1) {
+    el.remove(1);
+  }
+
+  values.forEach(v => {
+    const o = document.createElement('option');
+
+    o.value = v;
+    o.textContent = v;
+
     el.appendChild(o);
   });
 
-  if(values.includes(current))el.value=current;
-}
-
-function addSourceFilter(){
-
-  if($('source')||!$('location'))return;
-
-  const location=$('location');
-
-  const source=document.createElement('select');
-
-  source.id='source';
-  source.setAttribute('aria-label','Filter by job source');
-  source.className=location.className;
-
-  const option=document.createElement('option');
-
-  option.value='';
-  option.textContent='All Sources';
-
-  source.appendChild(option);
-
-  const parent=location.parentElement;
-
-  if(parent&&parent.parentElement){
-    parent.parentElement.insertBefore(source,parent);
+  if (values.includes(current)) {
+    el.value = current;
   }
 }
 
-function renderFilters(){
 
-  addSourceFilter();
+/*
+ * Create Source filter dynamically.
+ *
+ * This means index.html does NOT need to be changed.
+ */
+function ensureSourceFilter() {
+  if ($('source')) {
+    return;
+  }
+
+  const sort = $('sort');
+
+  if (!sort || !sort.parentElement) {
+    return;
+  }
+
+  const wrapper = document.createElement('div');
+
+  wrapper.className = 'filter-select';
+
+  wrapper.innerHTML = `
+    <select id="source" aria-label="Filter by job source">
+      <option value="">All Sources</option>
+    </select>
+  `;
+
+  sort.parentElement.insertBefore(
+    wrapper,
+    sort.parentElement.firstChild
+  );
+
+  $('source').addEventListener(
+    'change',
+    render
+  );
+}
+
+
+function renderFilters() {
+  ensureSourceFilter();
+
+  populate(
+    'location',
+    unique('location')
+  );
+
+  populate(
+    'employment',
+    unique('employment_type')
+  );
+
+  populate(
+    'experience',
+    unique('experience')
+  );
+
+  const sources = [
+    ...new Set(
+      state.jobs
+        .map(sourceKey)
+        .filter(Boolean)
+    )
+  ].sort();
 
   populate(
     'source',
-    [...new Set(
-      state.jobs
-        .map(sourceOf)
-        .filter(Boolean)
-    )].sort((a,b)=>a.localeCompare(b))
+    sources
   );
-
-  populate('location',unique('location'));
-  populate('employment',unique('employment_type'));
-  populate('experience',unique('experience'));
 }
 
-function filteredJobs(){
 
-  const q=$('search').value.toLowerCase().trim();
+/* =========================================================
+   FILTER JOBS
+========================================================= */
 
-  const source=$('source')?.value||'';
+function filteredJobs() {
+  const q = $('search')
+    .value
+    .toLowerCase()
+    .trim();
 
-  const loc=$('location').value;
+  const loc = $('location').value;
+  const type = $('employment').value;
+  const exp = $('experience').value;
 
-  const type=$('employment').value;
+  const source =
+    $('source')?.value || '';
 
-  const exp=$('experience').value;
+  const sort = $('sort').value;
 
-  const sort=$('sort').value;
+  /*
+   * First remove old jobs.
+   */
+  const recentJobs = state.jobs.filter(
+    isWithinLastThreeMonths
+  );
 
-  const jobs=state.jobs.filter(j=>{
+  /*
+   * Then remove duplicates.
+   */
+  const uniqueJobs = deduplicateJobs(
+    recentJobs
+  );
 
-    const hay=[
+  const jobs = uniqueJobs.filter(j => {
+    const hay = [
       j.title,
       j.company,
       j.companyName,
@@ -124,577 +484,765 @@ function filteredJobs(){
       j.description,
       j.skills,
       j.source,
-      j.provider,
       j.employment_type,
-      j.experience,
-      j.experienceText
+      j.experience
     ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
 
-    return(
-      (!q||hay.includes(q))&&
-      (!source||sourceOf(j)===source)&&
-      (!loc||j.location===loc)&&
-      (!type||j.employment_type===type)&&
-      (!exp||j.experience===exp)
+    const matchesSearch =
+      !q ||
+      hay.includes(q);
+
+    const matchesLocation =
+      !loc ||
+      j.location === loc;
+
+    const matchesType =
+      !type ||
+      j.employment_type === type;
+
+    const matchesExperience =
+      !exp ||
+      j.experience === exp;
+
+    const matchesSource =
+      !source ||
+      sourceKey(j) === source;
+
+    return (
+      matchesSearch &&
+      matchesLocation &&
+      matchesType &&
+      matchesExperience &&
+      matchesSource
     );
   });
 
-  jobs.sort((a,b)=>
+  jobs.sort((a, b) => {
+    if (sort === 'company') {
+      return String(
+        a.company ||
+        a.companyName ||
+        ''
+      ).localeCompare(
+        String(
+          b.company ||
+          b.companyName ||
+          ''
+        )
+      );
+    }
 
-    sort==='company'
-      ?String(a.company||a.companyName||'')
-        .localeCompare(String(b.company||b.companyName||''))
+    if (sort === 'title') {
+      return String(
+        a.title || ''
+      ).localeCompare(
+        String(
+          b.title || ''
+        )
+      );
+    }
 
-    :sort==='title'
-      ?String(a.title||'')
-        .localeCompare(String(b.title||''))
+    if (sort === 'newest') {
+      const da =
+        parseJobDate(a)?.getTime() || 0;
 
-    :sort==='newest'
-      ?String(b.posted_at||b.postedAt||b.postedDate||'')
-        .localeCompare(String(a.posted_at||a.postedAt||a.postedDate||''))
+      const db =
+        parseJobDate(b)?.getTime() || 0;
 
-    :Number(b.match_score||0)-Number(a.match_score||0)
+      return db - da;
+    }
 
-  );
+    return (
+      Number(
+        b.match_score || 0
+      ) -
+      Number(
+        a.match_score || 0
+      )
+    );
+  });
 
   return jobs;
 }
 
-function render(){
 
-  const jobs=filteredJobs();
+/* =========================================================
+   RENDER
+========================================================= */
 
-  $('count').textContent=
-    `Showing ${jobs.length} of ${state.jobs.length} matched job${state.jobs.length===1?'':'s'}`;
+function render() {
+  const jobs = filteredJobs();
+
+  const source =
+    $('source')?.value || '';
+
+  const recentUniqueCount =
+    deduplicateJobs(
+      state.jobs.filter(
+        isWithinLastThreeMonths
+      )
+    ).length;
+
+  let countText;
+
+  if (source) {
+    countText =
+      `Showing ${jobs.length} of ${recentUniqueCount} recent unique jobs`;
+  } else {
+    countText =
+      `Showing ${jobs.length} of ${recentUniqueCount} recent unique jobs`;
+  }
+
+  $('count').textContent =
+    countText;
 
   renderChips();
 
-  $('jobs').innerHTML=
-    jobs.map((j,i)=>card(j,i)).join('');
+  $('jobs').innerHTML =
+    jobs
+      .map((j, i) => card(j, i))
+      .join('');
 
-  $('empty').classList.toggle(
-    'hidden',
-    jobs.length>0
-  );
+  $('empty')
+    .classList
+    .toggle(
+      'hidden',
+      jobs.length > 0
+    );
 
   renderStats();
 }
 
-function renderChips(){
 
-  const chips=[];
+/* =========================================================
+   FILTER CHIPS
+========================================================= */
 
-  if($('search').value.trim())
+function renderChips() {
+  const chips = [];
+
+  if ($('search').value.trim()) {
     chips.push([
       'Search',
       $('search').value.trim(),
       'search'
     ]);
+  }
 
-  if($('source')?.value)
+  if ($('source')?.value) {
     chips.push([
       'Source',
       $('source').value,
       'source'
     ]);
+  }
 
-  if($('location').value)
+  if ($('location').value) {
     chips.push([
       'Location',
       $('location').value,
       'location'
     ]);
+  }
 
-  if($('employment').value)
+  if ($('employment').value) {
     chips.push([
       'Job type',
       $('employment').value,
       'employment'
     ]);
+  }
 
-  if($('experience').value)
+  if ($('experience').value) {
     chips.push([
       'Experience',
       $('experience').value,
       'experience'
     ]);
+  }
 
-  $('chips').innerHTML=chips.map(
-    ([label,val,key])=>
-      `<span class="chip">
-        ${escapeHtml(label)}: ${escapeHtml(val)}
-        <button
-          data-clear="${key}"
-          aria-label="Remove ${escapeHtml(label)} filter"
-        >×</button>
-      </span>`
-  ).join('');
+  $('chips').innerHTML =
+    chips
+      .map(
+        ([label, val, key]) =>
+          `<span class="chip">
+            ${escapeHtml(label)}:
+            ${escapeHtml(val)}
+            <button
+              data-clear="${escapeHtml(key)}"
+              aria-label="Remove ${escapeHtml(label)} filter"
+            >×</button>
+          </span>`
+      )
+      .join('');
 }
 
-function logoFor(j){
 
-  const c=String(
-    j.company||j.companyName||'Company'
+/* =========================================================
+   COMPANY LOGO
+========================================================= */
+
+function logoFor(j) {
+  const c = String(
+    j.company ||
+    j.companyName ||
+    'Company'
   ).trim();
 
   return escapeHtml(
-    (c[0]||'C').toUpperCase()
+    (c[0] || 'C').toUpperCase()
   );
 }
 
-function card(j,i){
 
-  const skills=arr(j.skills).slice(0,6);
+/* =========================================================
+   JOB CARD
+========================================================= */
 
-  const exp=
-    j.experience||
-    j.experienceText||
-    '';
+function card(j, i) {
+  const skills =
+    arr(j.skills).slice(0, 6);
 
-  const type=
-    j.employment_type||
-    j.workMode||
+  const exp =
+    j.experience || '';
+
+  const type =
+    j.employment_type ||
+    j.workMode ||
     'Full-time';
 
-  const location=
-    j.location||
+  const location =
+    j.location ||
     'Location not listed';
 
-  const company=
-    j.company||
-    j.companyName||
+  const company =
+    j.company ||
+    j.companyName ||
     'Company not listed';
 
-  const score=
-    Number(j.match_score||0);
+  const score =
+    calculateMatchScore(j);
 
-  const source=
-    sourceOf(j);
+  const id =
+    j.id ||
+    j.job_id ||
+    j.jobId ||
+    j.original_url ||
+    j.redirect_url ||
+    `${j.title || 'job'}-${company}-${location}`;
 
-  const url=
-    jobUrl(j);
+  const saved =
+    state.saved.has(
+      String(id)
+    );
 
-  const id=
-    j.id||
-    j.job_id||
-    j.jobId||
-    url||
-    `${j.title||'job'}-${company}`;
-
-  const saved=
-    state.saved.has(String(id));
-
-  const desc=
+  const desc =
     strip(j.description);
 
-  const postedValue=
-    j.posted_at||
-    j.postedAt||
-    j.postedDate;
+  const posted =
+    parseJobDate(j)
+      ? formatPosted(
+          parseJobDate(j)
+        )
+      : 'Date not listed';
 
-  const posted=
-    postedValue
-      ?formatPosted(postedValue)
-      :'Date not listed';
+  const source =
+    sourceKey(j);
 
   return `
-  <article class="job">
+    <article class="job">
 
-    <div class="company-logo alt${i%5}">
-      ${logoFor(j)}
-    </div>
-
-    <div class="job-main">
-
-      <div class="job-title-row">
-
-        <h2 class="job-title">
-          ${escapeHtml(j.title||'Untitled role')}
-        </h2>
-
-        <span class="score">
-          ${score}% Match
-        </span>
-
+      <div class="company-logo alt${i % 5}">
+        ${logoFor(j)}
       </div>
 
-      <div class="company">
-        ${escapeHtml(company)}
-      </div>
+      <div class="job-main">
 
-      <div class="meta-grid">
+        <div class="job-title-row">
 
-        <span class="meta-item">
-          <span class="meta-icon">⌖</span>
-          ${escapeHtml(location)}
-        </span>
+          <h2 class="job-title">
+            ${escapeHtml(
+              j.title ||
+              'Untitled role'
+            )}
+          </h2>
 
-        <span class="meta-item">
-          <span class="meta-icon">▣</span>
-          ${escapeHtml(type)}
-        </span>
-
-        <span class="meta-item">
-          <span class="meta-icon">◒</span>
-          ${escapeHtml(exp||'Experience not listed')}
-        </span>
-
-        <span class="meta-item">
-          <span class="meta-icon">♧</span>
-          ${escapeHtml(j.company_size||'Company size: Unknown')}
-        </span>
-
-      </div>
-
-      ${
-        skills.length
-        ?`
-        <div class="skills">
-
-          ${skills.map(
-            (s,n)=>
-              `<span class="tag${n>3?' neutral':''}">
-                ${escapeHtml(s)}
-              </span>`
-          ).join('')}
+          <span class="score">
+            ${score}% Match
+          </span>
 
         </div>
-        `
-        :''
-      }
 
-      ${
-        desc
-        ?`
-        <div class="description">
-          ${escapeHtml(desc)}
+        <div class="company">
+          ${escapeHtml(company)}
         </div>
-        `
-        :''
-      }
 
-    </div>
+        <div class="meta-grid">
 
-    <div class="job-actions">
+          <span class="meta-item">
+            <span class="meta-icon">⌖</span>
+            ${escapeHtml(location)}
+          </span>
 
-      <div class="posted">
-        ${escapeHtml(posted)}
+          <span class="meta-item">
+            <span class="meta-icon">▣</span>
+            ${escapeHtml(type)}
+          </span>
+
+          <span class="meta-item">
+            <span class="meta-icon">◒</span>
+            ${escapeHtml(
+              exp ||
+              'Experience not listed'
+            )}
+          </span>
+
+          <span class="meta-item">
+            <span class="meta-icon">♧</span>
+            ${escapeHtml(
+              j.company_size ||
+              'Company size: Unknown'
+            )}
+          </span>
+
+        </div>
+
+        ${
+          source
+            ? `
+              <div class="job-source">
+                ${escapeHtml(source)}
+              </div>
+            `
+            : ''
+        }
+
+        ${
+          skills.length
+            ? `
+              <div class="skills">
+                ${skills
+                  .map(
+                    (s, n) =>
+                      `<span class="tag${
+                        n > 3
+                          ? ' neutral'
+                          : ''
+                      }">
+                        ${escapeHtml(s)}
+                      </span>`
+                  )
+                  .join('')}
+              </div>
+            `
+            : ''
+        }
+
+        ${
+          desc
+            ? `
+              <div class="description">
+                ${escapeHtml(desc)}
+              </div>
+            `
+            : ''
+        }
+
       </div>
 
-      <div class="source-badge">
-        ${escapeHtml(source)}
+      <div class="job-actions">
+
+        <div class="posted">
+          ${escapeHtml(posted)}
+        </div>
+
+        <button
+          class="bookmark ${saved ? 'saved' : ''}"
+          data-save="${escapeHtml(
+            String(id)
+          )}"
+          title="${
+            saved
+              ? 'Remove saved job'
+              : 'Save job'
+          }"
+          aria-label="${
+            saved
+              ? 'Remove saved job'
+              : 'Save job'
+          }"
+        >
+          ${saved ? '★' : '☆'}
+        </button>
+
+        <a
+          class="view"
+          href="${escapeHtml(
+            j.original_url ||
+            j.redirect_url ||
+            j.url ||
+            '#'
+          )}"
+          target="_blank"
+          rel="noopener"
+        >
+          View Job ↗
+        </a>
+
       </div>
 
-      <button
-        class="bookmark ${saved?'saved':''}"
-        data-save="${escapeHtml(String(id))}"
-        title="${saved?'Remove saved job':'Save job'}"
-        aria-label="${saved?'Remove saved job':'Save job'}"
-      >
-        ${saved?'★':'☆'}
-      </button>
-
-      <a
-        class="view"
-        href="${escapeHtml(url)}"
-        target="_blank"
-        rel="noopener"
-      >
-        View Job ↗
-      </a>
-
-    </div>
-
-  </article>`;
+    </article>
+  `;
 }
 
-function formatPosted(value){
 
-  const d=new Date(value);
+/* =========================================================
+   DATE DISPLAY
+========================================================= */
 
-  if(Number.isNaN(d.getTime()))
+function formatPosted(value) {
+  const d =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+  if (
+    Number.isNaN(
+      d.getTime()
+    )
+  ) {
     return 'Date not listed';
+  }
 
   return d.toLocaleDateString(
     undefined,
     {
-      day:'numeric',
-      month:'long',
-      year:'numeric'
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
     }
   );
 }
 
-function renderStats(){
 
-  const m=state.meta;
+/* =========================================================
+   STATS
+========================================================= */
 
-  const sources=[
-    ...new Set(
-      state.jobs
-        .map(sourceOf)
-        .filter(Boolean)
-    )
-  ];
+function renderStats() {
+  const m =
+    state.meta || {};
 
-  const matched=
+  const allRecent =
     state.jobs.filter(
-      j=>Number(j.match_score||0)>=60
-    ).length;
-
-  const uniqueIds=
-    new Set(
-      state.jobs.map(
-        j=>
-          j.id||
-          j.job_id||
-          j.jobId||
-          jobUrl(j)||
-          `${j.title}-${j.company||j.companyName}`
-      )
+      isWithinLastThreeMonths
     );
 
-  const sourceLabel=
-    sources.length
-      ?sources.join(' + ')
-      :'Unknown';
+  const uniqueRecent =
+    deduplicateJobs(
+      allRecent
+    );
 
-  const cards=[
+  const sources =
+    Object.keys(
+      m.sources || {}
+    );
 
+  const source =
+    sources[0] ||
+    state.jobs.find(
+      j => j.source
+    )?.source ||
+    'Naukri + Adzuna';
+
+  /*
+   * Count source totals from the actual data.
+   */
+  const naukriCount =
+    uniqueRecent.filter(
+      j => sourceKey(j) === 'Naukri'
+    ).length;
+
+  const adzunaCount =
+    uniqueRecent.filter(
+      j => sourceKey(j) === 'Adzuna'
+    ).length;
+
+  const cards = [
     [
       '▣',
       'Jobs Collected',
-      m.collected_jobs??m.total_jobs??state.jobs.length,
-      'From '+sourceLabel
+      state.jobs.length,
+      'Raw jobs from Naukri + Adzuna'
     ],
-
     [
       '▤',
       'Unique Jobs',
-      m.unique_jobs??uniqueIds.size,
-      'After deduplication'
+      uniqueRecent.length,
+      'Recent jobs after deduplication'
     ],
-
     [
       '✦',
       'New Jobs',
-      m.new_jobs??0,
-      'Added this run'
+      m.new_jobs ??
+      uniqueRecent.length,
+      'Available in latest run'
     ],
-
     [
       '☆',
       'Matched Jobs',
-      matched,
-      'Match score ≥ 60%'
+      uniqueRecent.length,
+      'Jobs from the last 3 months'
     ],
-
     [
       '◎',
       'Source Status',
-      sourceLabel,
-      'Live job search via '+sourceLabel
+      `${naukriCount} Naukri · ${adzunaCount} Adzuna`,
+      'Sources available'
     ]
-
   ];
 
-  $('stats').innerHTML=
-    cards.map(
-      (c,i)=>
-        i===4
-        ?
-        `<div class="stat">
+  $('stats').innerHTML =
+    cards
+      .map(
+        (c, i) =>
+          i === 4
+            ? `
+              <div class="stat">
 
-          <div class="stat-icon">
-            ${c[0]}
-          </div>
+                <div class="stat-icon">
+                  ${c[0]}
+                </div>
 
-          <div class="stat-copy">
+                <div class="stat-copy">
 
-            <div class="stat-label">
-              ${c[1]}
-            </div>
+                  <div class="stat-label">
+                    ${c[1]}
+                  </div>
 
-            <div class="source-status">
+                  <div class="source-status">
+                    <span class="mini-dot"></span>
+                    ${escapeHtml(c[2])}
+                    <span class="enabled">
+                      Enabled
+                    </span>
+                  </div>
 
-              <span class="mini-dot"></span>
+                  <div class="stat-sub">
+                    ${escapeHtml(c[3])}
+                  </div>
 
-              ${escapeHtml(c[2])}
+                </div>
 
-              <span class="enabled">
-                Enabled
-              </span>
+              </div>
+            `
+            : `
+              <div class="stat">
 
-            </div>
+                <div class="stat-icon">
+                  ${c[0]}
+                </div>
 
-            <div class="stat-sub">
-              ${escapeHtml(c[3])}
-            </div>
+                <div class="stat-copy">
 
-          </div>
+                  <div class="stat-label">
+                    ${c[1]}
+                  </div>
 
-        </div>`
+                  <div class="stat-value">
+                    ${escapeHtml(c[2])}
+                  </div>
 
-        :
-        `<div class="stat">
+                  <div class="stat-sub">
+                    ${escapeHtml(c[3])}
+                  </div>
 
-          <div class="stat-icon">
-            ${c[0]}
-          </div>
+                </div>
 
-          <div class="stat-copy">
+              </div>
+            `
+      )
+      .join('');
 
-            <div class="stat-label">
-              ${c[1]}
-            </div>
+  if ($('sourceName')) {
+    $('sourceName').textContent =
+      source;
+  }
 
-            <div class="stat-value">
-              ${escapeHtml(c[2])}
-            </div>
-
-            <div class="stat-sub">
-              ${escapeHtml(c[3])}
-            </div>
-
-          </div>
-
-        </div>`
-    ).join('');
-
-  $('sourceName').textContent=
-    sourceLabel;
-
-  const raw=
-    m.last_run_utc||
-    m.updated_at||
+  const raw =
+    m.last_run_utc ||
+    m.updated_at ||
     m.updated_at_utc;
 
-  const formatted=
+  const formatted =
     raw
-      ?
-      new Date(raw).toLocaleString(
-        undefined,
-        {
-          month:'short',
-          day:'numeric',
-          year:'numeric',
-          hour:'2-digit',
-          minute:'2-digit',
-          hour12:true,
-          timeZoneName:'short'
-        }
-      )
-      :
-      'Waiting for first run';
+      ? new Date(raw).toLocaleString(
+          undefined,
+          {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZoneName: 'short'
+          }
+        )
+      : 'Waiting for first run';
 
-  $('updated').textContent=
-    formatted;
+  if ($('updated')) {
+    $('updated').textContent =
+      formatted;
+  }
 
-  $('footerUpdated').textContent=
-    'Last updated: '+formatted;
+  if ($('footerUpdated')) {
+    $('footerUpdated').textContent =
+      'Last updated: ' +
+      formatted;
+  }
 }
 
-function clearFilters(){
 
-  $('search').value='';
+/* =========================================================
+   CLEAR FILTERS
+========================================================= */
 
-  if($('source'))
-    $('source').value='';
+function clearFilters() {
+  $('search').value = '';
+  $('location').value = '';
+  $('employment').value = '';
+  $('experience').value = '';
+  $('sort').value = 'score';
 
-  $('location').value='';
-
-  $('employment').value='';
-
-  $('experience').value='';
-
-  $('sort').value='score';
+  if ($('source')) {
+    $('source').value = '';
+  }
 
   render();
 }
 
-$('search').addEventListener(
-  'input',
-  render
-);
+
+/* =========================================================
+   EVENT LISTENERS
+========================================================= */
+
+$('search')
+  .addEventListener(
+    'input',
+    render
+  );
 
 [
   'location',
   'employment',
   'experience',
   'sort'
-].forEach(
-  id=>
-    $(id).addEventListener(
-      'change',
-      render
-    )
-);
+].forEach(id => {
+  $(id).addEventListener(
+    'change',
+    render
+  );
+});
 
-$('clear').addEventListener(
-  'click',
-  clearFilters
-);
+$('clear')
+  .addEventListener(
+    'click',
+    clearFilters
+  );
 
-$('emptyClear').addEventListener(
-  'click',
-  clearFilters
-);
+$('emptyClear')
+  .addEventListener(
+    'click',
+    clearFilters
+  );
 
-$('refresh').addEventListener(
-  'click',
-  ()=>load()
-);
+$('refresh')
+  .addEventListener(
+    'click',
+    () => load()
+  );
 
-$('runSearch').addEventListener(
-  'click',
-  ()=>load()
-);
+$('runSearch')
+  .addEventListener(
+    'click',
+    () => load()
+  );
 
-$('chips').addEventListener(
-  'click',
-  e=>{
 
-    const key=
-      e.target.dataset.clear;
+/* =========================================================
+   FILTER CHIP CLICK
+========================================================= */
 
-    if(!key)return;
+$('chips')
+  .addEventListener(
+    'click',
+    e => {
+      const key =
+        e.target.dataset.clear;
 
-    if(key==='search')
-      $('search').value='';
+      if (!key) return;
 
-    else if($(key))
-      $(key).value='';
+      if (key === 'search') {
+        $('search').value = '';
+      } else if (
+        key === 'source' &&
+        $('source')
+      ) {
+        $('source').value = '';
+      } else {
+        $(key).value = '';
+      }
 
-    render();
-  }
-);
+      render();
+    }
+  );
 
-$('jobs').addEventListener(
-  'click',
-  e=>{
 
-    const btn=
-      e.target.closest('[data-save]');
+/* =========================================================
+   SAVE / BOOKMARK JOB
+========================================================= */
 
-    if(!btn)return;
+$('jobs')
+  .addEventListener(
+    'click',
+    e => {
+      const btn =
+        e.target.closest(
+          '[data-save]'
+        );
 
-    const id=
-      String(btn.dataset.save);
+      if (!btn) return;
 
-    state.saved.has(id)
-      ?state.saved.delete(id)
-      :state.saved.add(id);
+      const id =
+        String(
+          btn.dataset.save
+        );
 
-    localStorage.setItem(
-      'job-agent-saved',
-      JSON.stringify([...state.saved])
-    );
+      if (
+        state.saved.has(id)
+      ) {
+        state.saved.delete(id);
+      } else {
+        state.saved.add(id);
+      }
 
-    render();
-  }
-);
+      localStorage.setItem(
+        'job-agent-saved',
+        JSON.stringify(
+          [...state.saved]
+        )
+      );
+
+      render();
+    }
+  );
+
+
+/* =========================================================
+   START
+========================================================= */
 
 load();
