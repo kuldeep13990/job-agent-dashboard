@@ -1,4 +1,4 @@
-name: Fetch Naukri + Adzuna Jobs
+name: Fetch Naukri + Adzuna jobs
 
 on:
   workflow_dispatch:
@@ -13,318 +13,362 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout dashboard
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout job-agent
+        uses: actions/checkout@v6
 
-      - name: Fetch Naukri + Adzuna jobs
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Fetch jobs
         env:
-          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
-          NAUKRI_APIFY_ACTOR_ID: ${{ secrets.NAUKRI_APIFY_ACTOR_ID }}
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          NAUKRI_APIFY_ACTOR_ID: ${{ secrets.NAUKRI_APIFY_ACTOR_ID }}
         run: |
-          python3 <<'PY'
+          python <<'PY'
           import json
           import os
-          import urllib.parse
-          import urllib.request
-          import urllib.error
+          import re
+          import requests
+          import time
+          from pathlib import Path
+          from datetime import datetime, timezone
 
-          NAUKRI_KEYWORDS = (
-              '"Senior iOS Developer","Senior Flutter Developer",'
-              '"Senior Mobile Application Developer","iOS Flutter Developer",'
-              '"Lead iOS Developer","Lead Mobile Application Developer",'
-              '"Senior Mobile App Developer"'
-          )
+          ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "").strip()
+          ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "").strip()
+          APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN", "").strip()
+          NAUKRI_APIFY_ACTOR_ID = os.getenv("NAUKRI_APIFY_ACTOR_ID", "").strip()
 
-          NAUKRI_LOCATIONS = (
-              '"Ahmedabad","Bangalore","Pune","Hyderabad","Mumbai",'
-              '"Delhi","Gurgaon","Noida","Chennai","Remote"'
-          )
+          for name, value in {
+              "ADZUNA_APP_ID": ADZUNA_APP_ID,
+              "ADZUNA_APP_KEY": ADZUNA_APP_KEY,
+              "APIFY_API_TOKEN": APIFY_API_TOKEN,
+              "NAUKRI_APIFY_ACTOR_ID": NAUKRI_APIFY_ACTOR_ID,
+          }.items():
+              if not value:
+                  raise RuntimeError(f"{name} is empty")
 
-          ADZUNA_KEYWORDS = [
+          SEARCHES = [
               "Flutter Developer",
               "iOS Developer",
               "Mobile Application Developer",
           ]
 
-          ADZUNA_LOCATIONS = [
-              "Ahmedabad",
-              "Bangalore",
-              "Pune",
-              "Hyderabad",
-              "Mumbai",
-              "Delhi",
-              "Gurgaon",
-              "Noida",
-              "Chennai",
-              "Remote",
+          LOCATIONS = [
+              "Ahmedabad", "Bangalore", "Pune", "Hyderabad", "Mumbai",
+              "Delhi", "Gurgaon", "Noida", "Chennai", "Remote",
           ]
 
-          def http_json(url, method="GET", body=None, headers=None):
-              headers = dict(headers or {})
-              data = None
+          OUT = Path("data/jobs.json")
+          OUT.parent.mkdir(parents=True, exist_ok=True)
 
-              if body is not None:
-                  data = json.dumps(body).encode("utf-8")
-                  headers["Content-Type"] = "application/json"
+          def clean(value):
+              if value is None:
+                  return ""
+              return re.sub(r"\s+", " ", str(value)).strip()
 
-              request = urllib.request.Request(
-                  url,
-                  data=data,
-                  headers=headers,
-                  method=method,
-              )
+          def arr(value):
+              if isinstance(value, list):
+                  return [clean(x) for x in value if clean(x)]
+              if isinstance(value, str):
+                  return [clean(x) for x in value.split(",") if clean(x)]
+              return []
 
-              try:
-                  with urllib.request.urlopen(request, timeout=180) as response:
-                      raw = response.read().decode("utf-8")
-                      return json.loads(raw)
+          def normalise_naukri(item):
+              title = clean(item.get("title") or item.get("jobTitle") or item.get("job_title"))
+              company = clean(item.get("companyName") or item.get("company") or item.get("company_name"))
+              location = clean(item.get("location") or item.get("locations"))
+              description = clean(item.get("description") or item.get("jobDescription") or item.get("descriptionText"))
+              url = clean(item.get("jobUrl") or item.get("jobURL") or item.get("job_url") or item.get("url") or item.get("original_url"))
+              job_id = clean(item.get("jobId") or item.get("jobID") or item.get("job_id"))
+              experience = clean(item.get("experienceText") or item.get("experience"))
+              posted = clean(item.get("postedDate") or item.get("posted_at") or item.get("postedAt"))
 
-              except urllib.error.HTTPError as exc:
-                  raw = exc.read().decode("utf-8", errors="replace")
-                  # Never print credentials from the URL/body.
-                  raise RuntimeError(
-                      f"HTTP {exc.code}: {raw[:1200]}"
-                  ) from None
-
-          def fetch_naukri():
-              token = os.environ["APIFY_API_TOKEN"]
-              actor_id = os.environ["NAUKRI_APIFY_ACTOR_ID"].strip()
-
-              if not actor_id:
-                  raise RuntimeError("NAUKRI_APIFY_ACTOR_ID is empty")
-
-              # These are the same values used successfully in the
-              # Apify Actor UI.
-              actor_input = {
-                  "keyword": NAUKRI_KEYWORDS,
-                  "location": NAUKRI_LOCATIONS,
+              return {
+                  "source": "Naukri",
+                  "id": job_id or url or f"{title}|{company}|{location}",
+                  "job_id": job_id,
+                  "title": title,
+                  "company": company,
+                  "company_name": company,
+                  "company_url": clean(item.get("companyUrl")),
+                  "company_logo": clean(item.get("companyLogoUrl")),
+                  "location": location,
+                  "work_mode": clean(item.get("workMode")),
+                  "experience": experience,
+                  "experience_min": item.get("experienceMin"),
+                  "experience_max": item.get("experienceMax"),
+                  "salary": clean(item.get("salary")),
+                  "salary_min": item.get("salaryMin"),
+                  "salary_max": item.get("salaryMax"),
+                  "salary_currency": clean(item.get("salaryCurrency") or "INR"),
+                  "skills": arr(item.get("skills")),
+                  "description": description,
+                  "employment_type": clean(item.get("employmentType") or item.get("employment_type")),
+                  "posted_at": posted,
+                  "original_url": url,
+                  "redirect_url": url,
               }
 
-              encoded_actor_id = urllib.parse.quote(actor_id, safe="~")
-
-              url = (
-                  "https://api.apify.com/v2/actors/"
-                  f"{encoded_actor_id}/run-sync-get-dataset-items"
-                  "?format=json&clean=true"
-              )
-
+          def run_naukri():
               print("Starting Naukri scrape...")
-              print(f"Using Apify Actor ID: {actor_id}")
+              print("Using Apify Actor ID: ***")
 
-              result = http_json(
-                  url,
-                  method="POST",
-                  body=actor_input,
-                  headers={
-                      "Authorization": f"Bearer {token}",
-                      "Accept": "application/json",
-                  },
-              )
+              url = f"https://api.apify.com/v2/acts/{NAUKRI_APIFY_ACTOR_ID}/runs?token={APIFY_API_TOKEN}"
 
-              if not isinstance(result, list):
-                  raise RuntimeError(
-                      "Apify returned an unexpected response; "
-                      "expected a dataset item array."
+              payload = {
+                  "searchKeyword": ",".join(SEARCHES),
+                  "location": ",".join(LOCATIONS),
+              }
+
+              response = requests.post(url, json=payload, timeout=120)
+
+              if response.status_code >= 400:
+                  raise RuntimeError(f"HTTP {response.status_code}: {response.text[:1000]}")
+
+              run = response.json().get("data", {})
+              run_id = run.get("id")
+
+              if not run_id:
+                  raise RuntimeError("Apify did not return a run ID")
+
+              print(f"Apify run started: {run_id}")
+
+              status_url = f"https://api.apify.com/v2/actor-runs/{run_id}?token={APIFY_API_TOKEN}"
+
+              status = None
+              data = {}
+
+              for _ in range(60):
+                  r = requests.get(status_url, timeout=60)
+                  r.raise_for_status()
+                  data = r.json().get("data", {})
+                  status = data.get("status")
+
+                  if status in {"SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"}:
+                      break
+
+                  time.sleep(5)
+
+              if status != "SUCCEEDED":
+                  raise RuntimeError(f"Apify Naukri run ended with status: {status}")
+
+              dataset_id = data.get("defaultDatasetId")
+
+              if not dataset_id:
+                  raise RuntimeError("Apify run has no default dataset")
+
+              items_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items?token={APIFY_API_TOKEN}"
+              items_response = requests.get(items_url, timeout=120)
+              items_response.raise_for_status()
+
+              raw = items_response.json()
+              if not isinstance(raw, list):
+                  raw = []
+
+              jobs = [
+                  normalise_naukri(x)
+                  for x in raw
+                  if isinstance(x, dict)
+              ]
+
+              jobs = [x for x in jobs if x.get("title") or x.get("original_url")]
+
+              print(f"Naukri returned {len(jobs)} jobs")
+              return jobs
+
+          def adzuna_search(query, location):
+              print(f"Fetching Adzuna: {query} / {location}")
+
+              url = "https://api.adzuna.com/v1/api/jobs/in/search/1"
+
+              params = {
+                  "app_id": ADZUNA_APP_ID,
+                  "app_key": ADZUNA_APP_KEY,
+                  "what": query,
+                  "where": location,
+                  "results_per_page": 50,
+                  "content-type": "application/json",
+              }
+
+              response = requests.get(url, params=params, timeout=60)
+
+              if response.status_code >= 400:
+                  print(
+                      f"Adzuna query failed ({query} / {location}): "
+                      f"HTTP {response.status_code}: {response.text[:500]}"
                   )
+                  return []
 
-              print(f"Naukri returned {len(result)} jobs")
-
+              data = response.json()
+              results = data.get("results", [])
               jobs = []
 
-              for job in result:
+              for item in results:
+                  if not isinstance(item, dict):
+                      continue
+
+                  title = clean(item.get("title"))
+                  company_data = item.get("company") or {}
+                  company = clean(company_data.get("display_name")) if isinstance(company_data, dict) else clean(company_data)
+
+                  loc_data = item.get("location") or {}
+                  location_text = clean(loc_data.get("display_name")) if isinstance(loc_data, dict) else clean(loc_data)
+
+                  description = clean(item.get("description"))
+                  url_value = clean(item.get("redirect_url"))
+                  job_id = clean(item.get("id"))
+
+                  category = item.get("category") or {}
+                  category_name = clean(category.get("label")) if isinstance(category, dict) else ""
+
                   jobs.append({
-                      "source": "Naukri",
-                      "jobId": job.get("jobId"),
-                      "title": job.get("title"),
-                      "companyName": job.get("companyName"),
-                      "companyUrl": job.get("companyUrl"),
-                      "companyLogoUrl": job.get("companyLogoUrl"),
-                      "location": job.get("location"),
-                      "workMode": job.get("workMode"),
-                      "experienceText": job.get("experienceText"),
-                      "experienceMin": job.get("experienceMin"),
-                      "experienceMax": job.get("experienceMax"),
-                      "salary": job.get("salary"),
-                      "salaryMin": job.get("salaryMin"),
-                      "salaryMax": job.get("salaryMax"),
-                      "salaryCurrency": job.get("salaryCurrency"),
-                      "skills": job.get("skills") or [],
-                      "jobDescription": job.get("jobDescription"),
-                      "postedDate": job.get("postedDate"),
-                      "postedDateRelative": job.get("postedDateRelative"),
-                      "applyByDate": job.get("applyByDate"),
-                      "jobUrl": job.get("jobUrl"),
-                      "vacancy": job.get("vacancy"),
-                      "companyRating": job.get("companyRating"),
-                      "companyReviewsCount": job.get("companyReviewsCount"),
-                      "ambitionBoxUrl": job.get("ambitionBoxUrl"),
-                      "scrapedAt": job.get("scrapedAt"),
+                      "source": "Adzuna",
+                      "id": job_id or url_value or f"{title}|{company}|{location_text}",
+                      "job_id": job_id,
+                      "title": title,
+                      "company": company,
+                      "company_name": company,
+                      "company_url": "",
+                      "company_logo": "",
+                      "location": location_text or location,
+                      "work_mode": "",
+                      "experience": "",
+                      "experience_min": None,
+                      "experience_max": None,
+                      "salary": clean(item.get("salary_min")) if item.get("salary_min") else "",
+                      "salary_min": item.get("salary_min"),
+                      "salary_max": item.get("salary_max"),
+                      "salary_currency": "INR",
+                      "skills": [],
+                      "description": description,
+                      "employment_type": "",
+                      "category": category_name,
+                      "posted_at": clean(item.get("created")),
+                      "original_url": url_value,
+                      "redirect_url": url_value,
                   })
 
               return jobs
 
-          def fetch_adzuna():
-              app_id = os.environ["ADZUNA_APP_ID"].strip()
-              app_key = os.environ["ADZUNA_APP_KEY"].strip()
-
-              if not app_id:
-                  raise RuntimeError("ADZUNA_APP_ID is empty")
-
-              if not app_key:
-                  raise RuntimeError("ADZUNA_APP_KEY is empty")
-
-              jobs = []
-
-              for keyword in ADZUNA_KEYWORDS:
-                  for location in ADZUNA_LOCATIONS:
-                      print(f"Fetching Adzuna: {keyword} / {location}")
-
-                      params = {
-                          "app_id": app_id,
-                          "app_key": app_key,
-                          "results_per_page": "20",
-                          "what": keyword,
-                          "where": location,
-                          "sort_by": "date",
-                          "content-type": "application/json",
-                      }
-
-                      url = (
-                          "https://api.adzuna.com/v1/api/jobs/in/search/1?"
-                          + urllib.parse.urlencode(params)
-                      )
-
-                      try:
-                          data = http_json(
-                              url,
-                              headers={"Accept": "application/json"},
-                          )
-
-                          results = data.get("results") or []
-
-                          for job in results:
-                              company = job.get("company") or {}
-                              location_data = job.get("location") or {}
-
-                              jobs.append({
-                                  "source": "Adzuna",
-                                  "jobId": str(job.get("id") or ""),
-                                  "title": job.get("title"),
-                                  "companyName": company.get("display_name"),
-                                  "companyUrl": None,
-                                  "companyLogoUrl": None,
-                                  "location": location_data.get("display_name"),
-                                  "workMode": None,
-                                  "experienceText": None,
-                                  "experienceMin": None,
-                                  "experienceMax": None,
-                                  "salary": None,
-                                  "salaryMin": job.get("salary_min"),
-                                  "salaryMax": job.get("salary_max"),
-                                  "salaryCurrency": "INR",
-                                  "skills": [],
-                                  "jobDescription": job.get("description"),
-                                  "postedDate": job.get("created"),
-                                  "postedDateRelative": None,
-                                  "applyByDate": None,
-                                  "jobUrl": job.get("redirect_url"),
-                                  "vacancy": None,
-                                  "companyRating": None,
-                                  "companyReviewsCount": None,
-                                  "ambitionBoxUrl": None,
-                                  "scrapedAt": None,
-                              })
-
-                      except Exception as exc:
-                          print(
-                              f"Adzuna query failed "
-                              f"({keyword} / {location}): {exc}"
-                          )
-
-              print(f"Adzuna jobs before dedupe: {len(jobs)}")
-              return jobs
-
-          def clean_key(value):
-              return (
-                  str(value or "")
-                  .lower()
-                  .strip()
-                  .replace(" ", "")
-                  .replace("-", "")
-                  .replace("_", "")
-              )
-
-          def dedupe(jobs):
-              seen = set()
-              unique = []
-
-              for job in jobs:
-                  url = (job.get("jobUrl") or "").strip().lower()
-
-                  if url:
-                      key = "url:" + url
-                  else:
-                      key = "|".join([
-                          clean_key(job.get("source")),
-                          clean_key(job.get("companyName")),
-                          clean_key(job.get("title")),
-                          clean_key(job.get("location")),
-                      ])
-
-                  if key in seen:
-                      continue
-
-                  seen.add(key)
-                  unique.append(job)
-
-              return unique
-
           naukri_jobs = []
-          adzuna_jobs = []
-
           try:
-              naukri_jobs = fetch_naukri()
+              naukri_jobs = run_naukri()
           except Exception as exc:
               print(f"Naukri scrape failed: {exc}")
 
-          try:
-              adzuna_jobs = fetch_adzuna()
-          except Exception as exc:
-              print(f"Adzuna scrape failed: {exc}")
+          adzuna_jobs = []
 
-          all_jobs = dedupe(naukri_jobs + adzuna_jobs)
+          for query in SEARCHES:
+              for location in LOCATIONS:
+                  adzuna_jobs.extend(adzuna_search(query, location))
 
-          print(
-              f"Final jobs: {len(all_jobs)} "
-              f"(Naukri: {len(naukri_jobs)}, "
-              f"Adzuna: {len(adzuna_jobs)})"
-          )
+          print(f"Adzuna jobs before dedupe: {len(adzuna_jobs)}")
 
-          # Safety: never replace good existing data with an empty file.
-          if not all_jobs:
+          all_jobs = naukri_jobs + adzuna_jobs
+          deduped = []
+          seen = set()
+
+          for job in all_jobs:
+              key = clean(
+                  job.get("id")
+                  or job.get("original_url")
+                  or f"{job.get('title')}|{job.get('company')}|{job.get('location')}"
+              ).lower()
+
+              if not key or key in seen:
+                  continue
+
+              seen.add(key)
+              deduped.append(job)
+
+          if not deduped:
               raise RuntimeError(
                   "Both Naukri and Adzuna returned 0 jobs. "
                   "Refusing to overwrite data/jobs.json."
               )
 
-          os.makedirs("data", exist_ok=True)
+          previous = []
 
-          with open("data/jobs.json", "w", encoding="utf-8") as file:
-              json.dump(
-                  all_jobs,
-                  file,
-                  indent=2,
-                  ensure_ascii=False,
-              )
+          if OUT.exists():
+              try:
+                  old = json.loads(OUT.read_text(encoding="utf-8"))
+                  previous = old.get("jobs", []) if isinstance(old, dict) else old
+                  if not isinstance(previous, list):
+                      previous = []
+              except Exception:
+                  previous = []
 
-          print(f"Done. Wrote {len(all_jobs)} jobs to data/jobs.json")
+          previous_keys = {
+              clean(x.get("id") or x.get("job_id") or x.get("original_url")).lower()
+              for x in previous
+              if isinstance(x, dict)
+          }
+
+          new_jobs = [
+              x for x in deduped
+              if clean(x.get("id") or x.get("job_id") or x.get("original_url")).lower()
+              not in previous_keys
+          ]
+
+          now = datetime.now(timezone.utc).isoformat()
+
+          payload = {
+              "jobs": deduped,
+              "meta": {
+                  "collected_jobs": len(all_jobs),
+                  "unique_jobs": len(deduped),
+                  "new_jobs": len(new_jobs),
+                  "saved_matches": len(deduped),
+                  "last_run_utc": now,
+                  "updated_at": now,
+                  "sources": {
+                      "Naukri": len(naukri_jobs),
+                      "Adzuna": len(adzuna_jobs),
+                  },
+              },
+          }
+
+          OUT.write_text(
+              json.dumps(payload, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          print(
+              f"Final jobs: {len(deduped)} "
+              f"(Naukri: {len(naukri_jobs)}, Adzuna: {len(adzuna_jobs)})"
+          )
+          print(f"Done. Wrote {len(deduped)} jobs to {OUT}")
           PY
 
-      - name: Commit and push job data
+      - name: Validate generated jobs
+        run: |
+          python - <<'PY'
+          import json
+
+          with open("data/jobs.json", encoding="utf-8") as f:
+              data = json.load(f)
+
+          jobs = data.get("jobs", data)
+
+          if not isinstance(jobs, list):
+              raise SystemExit("jobs.json does not contain a jobs array")
+
+          if not jobs:
+              raise SystemExit("jobs.json contains zero jobs")
+
+          print(f"Validated jobs.json: {len(jobs)} jobs")
+          PY
+
+      - name: Commit generated data to job-agent
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -332,8 +376,38 @@ jobs:
           git add data/jobs.json
 
           if git diff --cached --quiet; then
-            echo "No changes to job data."
+            echo "No changes to jobs.json"
           else
-            git commit -m "chore: update job listings"
+            git commit -m "chore: update job data"
+            git push
+          fi
+
+      - name: Publish jobs.json to dashboard repository
+        env:
+          DASHBOARD_REPO_TOKEN: ${{ secrets.DASHBOARD_REPO_TOKEN }}
+        run: |
+          if [ -z "$DASHBOARD_REPO_TOKEN" ]; then
+            echo "DASHBOARD_REPO_TOKEN is empty"
+            exit 1
+          fi
+
+          git clone \
+            "https://x-access-token:${DASHBOARD_REPO_TOKEN}@github.com/kuldeep13990/job-agent-dashboard.git" \
+            dashboard
+
+          mkdir -p dashboard/data
+          cp data/jobs.json dashboard/data/jobs.json
+
+          cd dashboard
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/jobs.json
+
+          if git diff --cached --quiet; then
+            echo "Dashboard jobs.json is already up to date"
+          else
+            git commit -m "chore: update job data"
             git push origin main
           fi
