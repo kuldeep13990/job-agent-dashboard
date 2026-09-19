@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-19T10:54:01.503050+00:00",
+  "updated_at": "2026-09-19T11:05:47.805836+00:00",
   "jobs": [
     {
       "title": "IOS Developer",
@@ -3426,10 +3426,10 @@
   ],
   "meta": {
     "version": "0.4",
-    "last_run_utc": "2026-09-19T10:54:01.503050+00:00",
+    "last_run_utc": "2026-09-19T11:05:47.805836+00:00",
     "collected": 844,
     "unique": 425,
-    "new_jobs": 66,
+    "new_jobs": 63,
     "saved_matches": 100,
     "sources": {
       "adzuna": {
