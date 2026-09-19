@@ -1,0 +1,317 @@
+name: Fetch Jobs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-jobs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout dashboard
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.DASHBOARD_REPO_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch Naukri + Adzuna jobs
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          NAUKRI_APIFY_ACTOR_ID: ${{ secrets.NAUKRI_APIFY_ACTOR_ID }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+          from datetime import datetime, timezone
+
+          # ------------------------------------------------------------
+          # Search configuration
+          # ------------------------------------------------------------
+          NAUKRI_KEYWORD = (
+              '"Senior iOS Developer",'
+              '"Senior Flutter Developer",'
+              '"Senior Mobile Application Developer",'
+              '"iOS Flutter Developer",'
+              '"Lead iOS Developer",'
+              '"Lead Mobile Application Developer",'
+              '"Senior Mobile App Developer"'
+          )
+
+          NAUKRI_LOCATION = (
+              '"Ahmedabad",'
+              '"Bangalore",'
+              '"Pune",'
+              '"Hyderabad",'
+              '"Mumbai",'
+              '"Delhi",'
+              '"Gurgaon",'
+              '"Noida",'
+              '"Chennai",'
+              '"Remote"'
+          )
+
+          # A small first-pass set for Adzuna. We can expand this after
+          # the first successful run.
+          ADZUNA_QUERIES = [
+              "Flutter Developer",
+              "iOS Developer",
+              "Mobile Application Developer",
+          ]
+
+          DATA_DIR = Path("data")
+          DATA_DIR.mkdir(exist_ok=True)
+          OUTPUT = DATA_DIR / "jobs.json"
+
+          def http_json(url, method="GET", payload=None, timeout=120):
+              data = None
+              headers = {"User-Agent": "job-agent-dashboard/1.0"}
+              if payload is not None:
+                  data = json.dumps(payload).encode("utf-8")
+                  headers["Content-Type"] = "application/json"
+
+              request = urllib.request.Request(
+                  url,
+                  data=data,
+                  headers=headers,
+                  method=method,
+              )
+              with urllib.request.urlopen(request, timeout=timeout) as response:
+                  return json.loads(response.read().decode("utf-8"))
+
+          def clean_html(value):
+              if not value:
+                  return ""
+              import re
+              text = re.sub(r"<[^>]+>", " ", str(value))
+              text = re.sub(r"\s+", " ", text)
+              return text.strip()
+
+          def normalize_naukri(job):
+              return {
+                  "source": "Naukri",
+                  "jobId": str(job.get("jobId") or ""),
+                  "title": job.get("title") or "",
+                  "companyName": job.get("companyName") or "",
+                  "companyUrl": job.get("companyUrl"),
+                  "companyLogoUrl": job.get("companyLogoUrl"),
+                  "location": job.get("location") or "",
+                  "workMode": job.get("workMode"),
+                  "experienceText": job.get("experienceText") or "",
+                  "experienceMin": job.get("experienceMin"),
+                  "experienceMax": job.get("experienceMax"),
+                  "salary": job.get("salary"),
+                  "salaryMin": job.get("salaryMin"),
+                  "salaryMax": job.get("salaryMax"),
+                  "salaryCurrency": job.get("salaryCurrency") or "INR",
+                  "skills": job.get("skills") or [],
+                  "jobDescription": clean_html(job.get("jobDescription")),
+                  "postedDate": job.get("postedDate"),
+                  "postedDateRelative": job.get("postedDateRelative"),
+                  "jobUrl": job.get("jobUrl") or "",
+                  "companyRating": job.get("companyRating"),
+                  "companyReviewsCount": job.get("companyReviewsCount"),
+                  "sourceKeyword": job.get("keyword"),
+                  "sourceLocation": job.get("locationSearched"),
+                  "scrapedAt": job.get("scrapedAt"),
+              }
+
+          def normalize_adzuna(job):
+              location = job.get("location") or {}
+              company = job.get("company") or {}
+
+              return {
+                  "source": "Adzuna",
+                  "jobId": str(job.get("id") or ""),
+                  "title": job.get("title") or "",
+                  "companyName": company.get("display_name") or "",
+                  "companyUrl": None,
+                  "companyLogoUrl": None,
+                  "location": location.get("display_name") or "",
+                  "workMode": None,
+                  "experienceText": "",
+                  "experienceMin": None,
+                  "experienceMax": None,
+                  "salary": job.get("salary_min"),
+                  "salaryMin": job.get("salary_min"),
+                  "salaryMax": job.get("salary_max"),
+                  "salaryCurrency": "INR",
+                  "skills": [],
+                  "jobDescription": clean_html(job.get("description")),
+                  "postedDate": job.get("created"),
+                  "postedDateRelative": None,
+                  "jobUrl": job.get("redirect_url") or "",
+                  "companyRating": None,
+                  "companyReviewsCount": None,
+                  "sourceKeyword": job.get("_search_query"),
+                  "sourceLocation": job.get("_search_location"),
+                  "scrapedAt": datetime.now(timezone.utc).isoformat(),
+              }
+
+          # ------------------------------------------------------------
+          # 1. Naukri via Apify
+          # ------------------------------------------------------------
+          apify_token = os.environ["APIFY_API_TOKEN"]
+          actor_id = os.environ["NAUKRI_APIFY_ACTOR_ID"]
+
+          apify_url = (
+              "https://api.apify.com/v2/acts/"
+              + urllib.parse.quote(actor_id, safe="")
+              + "/run-sync-get-dataset-items?token="
+              + urllib.parse.quote(apify_token, safe="")
+          )
+
+          naukri_input = {
+              "keyword": NAUKRI_KEYWORD,
+              "location": NAUKRI_LOCATION,
+          }
+
+          print("Starting Naukri scrape...")
+          try:
+              naukri_raw = http_json(
+                  apify_url,
+                  method="POST",
+                  payload=naukri_input,
+                  timeout=300,
+              )
+              if not isinstance(naukri_raw, list):
+                  raise RuntimeError(
+                      f"Unexpected Naukri response type: {type(naukri_raw).__name__}"
+                  )
+              naukri_jobs = [
+                  normalize_naukri(x)
+                  for x in naukri_raw
+                  if isinstance(x, dict)
+              ]
+              print(f"Naukri jobs: {len(naukri_jobs)}")
+          except Exception as exc:
+              print(f"Naukri scrape failed: {exc}", file=sys.stderr)
+              naukri_jobs = []
+
+          # ------------------------------------------------------------
+          # 2. Adzuna
+          # ------------------------------------------------------------
+          app_id = os.environ["ADZUNA_APP_ID"]
+          app_key = os.environ["ADZUNA_APP_KEY"]
+
+          adzuna_jobs = []
+
+          for query in ADZUNA_QUERIES:
+              params = urllib.parse.urlencode({
+                  "app_id": app_id,
+                  "app_key": app_key,
+                  "results_per_page": 50,
+                  "what": query,
+                  "where": "India",
+                  "content-type": "application/json",
+              })
+
+              url = f"https://api.adzuna.com/v1/api/jobs/in/search/1?{params}"
+
+              print(f"Fetching Adzuna: {query}")
+              try:
+                  result = http_json(url, timeout=120)
+                  for item in result.get("results", []):
+                      item["_search_query"] = query
+                      item["_search_location"] = "India"
+                      adzuna_jobs.append(normalize_adzuna(item))
+              except Exception as exc:
+                  print(f"Adzuna query failed ({query}): {exc}", file=sys.stderr)
+
+          print(f"Adzuna jobs before dedupe: {len(adzuna_jobs)}")
+
+          # ------------------------------------------------------------
+          # 3. Merge + deduplicate
+          # ------------------------------------------------------------
+          incoming = naukri_jobs + adzuna_jobs
+
+          # Read existing data so a temporary source failure does not
+          # erase the dashboard's current jobs.
+          existing = []
+          if OUTPUT.exists():
+              try:
+                  old = json.loads(OUTPUT.read_text(encoding="utf-8"))
+                  if isinstance(old, list):
+                      existing = old
+                  elif isinstance(old, dict) and isinstance(old.get("jobs"), list):
+                      existing = old["jobs"]
+              except Exception as exc:
+                  print(f"Could not read existing jobs.json: {exc}")
+
+          # Prefer fresh records. Existing records are only retained when
+          # their URL/ID is not present in the fresh result.
+          fresh_keys = set()
+          for job in incoming:
+              key = (
+                  job.get("jobUrl")
+                  or f'{job.get("source","")}:{job.get("jobId","")}'
+              )
+              if key:
+                  fresh_keys.add(key)
+
+          merged = list(incoming)
+          for job in existing:
+              key = (
+                  job.get("jobUrl")
+                  or f'{job.get("source","")}:{job.get("jobId","")}'
+              )
+              if key and key not in fresh_keys:
+                  merged.append(job)
+
+          # Final defensive dedupe.
+          unique = []
+          seen = set()
+
+          for job in merged:
+              key = (
+                  job.get("jobUrl")
+                  or f'{job.get("source","")}:{job.get("jobId","")}'
+                  or f'{job.get("companyName","")}:{job.get("title","")}:{job.get("location","")}'
+              )
+              if key in seen:
+                  continue
+              seen.add(key)
+              unique.append(job)
+
+          # Newest jobs first when a postedDate exists.
+          unique.sort(
+              key=lambda x: x.get("postedDate") or "",
+              reverse=True,
+          )
+
+          OUTPUT.write_text(
+              json.dumps(unique, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+
+          print(
+              f"Done. Wrote {len(unique)} jobs to {OUTPUT} "
+              f"({len(naukri_jobs)} Naukri + {len(adzuna_jobs)} Adzuna fresh records)."
+          )
+          PY
+
+      - name: Commit updated job data
+        run: |
+          git config user.name "job-agent-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/jobs.json
+
+          if git diff --cached --quiet; then
+            echo "No job-data changes to commit."
+          else
+            git commit -m "chore: update job listings"
+            git push
+          fi
