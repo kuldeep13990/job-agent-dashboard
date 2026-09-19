@@ -21,8 +21,36 @@ function render(){const jobs=filteredJobs();$('count').textContent=`Showing ${jo
 function renderChips(){const chips=[];if($('search').value.trim())chips.push(['Search', $('search').value.trim(),'search']);if($('location').value)chips.push(['Location',$('location').value,'location']);if($('employment').value)chips.push(['Job type',$('employment').value,'employment']);if($('experience').value)chips.push(['Experience',$('experience').value,'experience']);$('chips').innerHTML=chips.map(([label,val,key])=>`<span class="chip">${escapeHtml(label)}: ${escapeHtml(val)} <button data-clear="${key}" aria-label="Remove ${escapeHtml(label)} filter">×</button></span>`).join('');}
 function logoFor(j,i){const c=String(j.company||'Company').trim();return escapeHtml((c[0]||'C').toUpperCase());}
 function card(j,i){
-  const skills=arr(j.skills).slice(0,6);const salary=j.salary||j.salary_text;const exp=j.experience||'';const type=j.employment_type||'Full-time';const location=j.location||'Location not listed';const company=j.company||'Company not listed';const score=Number(j.match_score||0);const id=j.id||j.job_id||j.original_url||`${j.title||'job'}-${company}`;const saved=state.saved.has(String(id));const desc=strip(j.description);const posted=j.posted_at?formatPosted(j.posted_at):'Posted recently';
-  return `<article class="job"><div class="company-logo alt${i%5}">${logoFor(j,i)}</div><div class="job-main"><h2 class="job-title">${escapeHtml(j.title||'Untitled role')}</h2><div class="company">${escapeHtml(company)}</div><div class="meta-grid"><span class="meta-item"><span class="meta-icon">⌖</span>${escapeHtml(location)}</span><span class="meta-item"><span class="meta-icon">▣</span>${escapeHtml(type)}</span><span class="meta-item"><span class="meta-icon">◒</span>${escapeHtml(exp||'Experience not listed')}</span><span class="meta-item"><span class="meta-icon">♧</span>${escapeHtml(j.company_size||'Company size: Unknown')}</span></div></div><div class="job-description">${desc?`<div class="description">${escapeHtml(desc)}</div>`:''}<div class="skills">${skills.map((s,n)=>`<span class="tag${n>3?' neutral':''}">${escapeHtml(s)}</span>`).join('')}</div></div><div class="job-score"><span class="score">${score}% Match</span><div class="posted">⌑ ${escapeHtml(posted)}</div></div><button class="bookmark ${saved?'saved':''}" data-save="${escapeHtml(String(id))}" title="${saved?'Remove saved job':'Save job'}" aria-label="${saved?'Remove saved job':'Save job'}">${saved?'★':'☆'}</button><a class="view" href="${escapeHtml(j.original_url||j.redirect_url||'#')}" target="_blank" rel="noopener">View Job ↗</a></article>`;
+  const skills=arr(j.skills).slice(0,6);
+  const exp=j.experience||'';
+  const type=j.employment_type||'Full-time';
+  const location=j.location||'Location not listed';
+  const company=j.company||'Company not listed';
+  const score=Number(j.match_score||0);
+  const id=j.id||j.job_id||j.original_url||`${j.title||'job'}-${company}`;
+  const saved=state.saved.has(String(id));
+  const desc=strip(j.description);
+  const posted=j.posted_at?formatPosted(j.posted_at):'Posted recently';
+  return `<article class="job">
+    <div class="company-logo alt${i%5}">${logoFor(j,i)}</div>
+    <div class="job-main">
+      <h2 class="job-title">${escapeHtml(j.title||'Untitled role')}</h2>
+      <div class="company">${escapeHtml(company)}</div>
+      <div class="meta-grid">
+        <span class="meta-item"><span class="meta-icon">⌖</span>${escapeHtml(location)}</span>
+        <span class="meta-item"><span class="meta-icon">▣</span>${escapeHtml(type)}</span>
+        <span class="meta-item"><span class="meta-icon">◒</span>${escapeHtml(exp||'Experience not listed')}</span>
+        <span class="meta-item"><span class="meta-icon">♧</span>${escapeHtml(j.company_size||'Company size: Unknown')}</span>
+      </div>
+    </div>
+    <div class="job-description">
+      <div class="skills">${skills.map((s,n)=>`<span class="tag${n>3?' neutral':''}">${escapeHtml(s)}</span>`).join('')}</div>
+      ${desc?`<div class="description">${escapeHtml(desc)}</div>`:''}
+    </div>
+    <div class="job-score"><span class="score">${score}% Match</span><div class="posted">⌑ ${escapeHtml(posted)}</div></div>
+    <button class="bookmark ${saved?'saved':''}" data-save="${escapeHtml(String(id))}" title="${saved?'Remove saved job':'Save job'}" aria-label="${saved?'Remove saved job':'Save job'}">${saved?'★':'☆'}</button>
+    <a class="view" href="${escapeHtml(j.original_url||j.redirect_url||'#')}" target="_blank" rel="noopener">View Job ↗</a>
+  </article>`;
 }
 function formatPosted(value){const d=new Date(value);if(Number.isNaN(d.getTime()))return 'Posted recently';const days=Math.floor((Date.now()-d.getTime())/86400000);if(days<=0)return 'Posted today';if(days===1)return 'Posted 1 day ago';if(days<7)return `Posted ${days} days ago`;return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});}
 function renderStats(){const m=state.meta;const sources=Object.keys(m.sources||{});const matched=state.jobs.length;const uniqueIds=new Set(state.jobs.map(j=>j.id||j.job_id||j.original_url||`${j.title}-${j.company}`));const source=sources[0]||state.jobs.find(j=>j.source)?.source||'Adzuna';const cards=[['▣','Jobs Collected',m.collected_jobs??m.total_jobs??matched,'From '+source],['▤','Unique Jobs',m.unique_jobs??uniqueIds.size,'After deduplication'],['✦','New Jobs',m.new_jobs??0,'Added this run'],['☆','Matched Jobs',m.saved_matches??matched,'Match score ≥ 60%'],['◎','Source Status',source,'Live job search via '+source]];$('stats').innerHTML=cards.map((c,i)=>i===4?`<div class="stat"><div class="stat-icon">${c[0]}</div><div class="stat-copy"><div class="stat-label">${c[1]}</div><div class="source-status"><span class="mini-dot"></span>${escapeHtml(c[2])}<span class="enabled">Enabled</span></div><div class="stat-sub">${escapeHtml(c[3])}</div></div></div>`:`<div class="stat"><div class="stat-icon">${c[0]}</div><div class="stat-copy"><div class="stat-label">${c[1]}</div><div class="stat-value">${escapeHtml(c[2])}</div><div class="stat-sub">${escapeHtml(c[3])}</div></div></div>`).join('');$('sourceName').textContent=source;const raw=m.last_run_utc||m.updated_at||m.updated_at_utc;const formatted=raw?new Date(raw).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true,timeZoneName:'short'}):'Waiting for first run';$('updated').textContent=formatted;$('footerUpdated').textContent='Last updated: '+formatted;}
