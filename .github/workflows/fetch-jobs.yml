@@ -16,7 +16,6 @@ jobs:
       - name: Checkout dashboard
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.DASHBOARD_REPO_TOKEN }}
           fetch-depth: 0
 
       - name: Fetch Naukri + Adzuna jobs
