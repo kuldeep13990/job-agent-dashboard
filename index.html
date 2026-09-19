@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Job Search Agent</title>
+  <meta name="description" content="Personal iOS and Flutter job discovery dashboard.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">J</span><div><strong>Job Agent</strong><small>Personal workspace</small></div></div>
+    <nav><a class="active" href="#jobs">Jobs</a><a href="#saved">Saved</a></nav>
+    <div class="side-note"><strong>Manual apply</strong><span>You review every listing before applying.</span></div>
+  </aside>
+  <main class="main">
+    <header class="hero">
+      <div><p class="eyebrow">JOB DISCOVERY</p><h1>Find your next opportunity.</h1><p class="subtitle">iOS & Flutter roles matched to your profile.</p></div>
+      <div class="updated" id="updated">Loading…</div>
+    </header>
+    <section class="stats" id="stats"></section>
+    <section class="toolbar">
+      <label class="search"><span>⌕</span><input id="search" placeholder="Search jobs, companies, skills…"></label>
+      <select id="source"><option value="">All sources</option></select>
+      <select id="location"><option value="">All locations</option></select>
+      <select id="score"><option value="0">Any match</option><option value="80">80%+</option><option value="70">70%+</option><option value="60">60%+</option></select>
+      <select id="sort"><option value="score">Best match</option><option value="newest">Newest</option><option value="company">Company</option><option value="title">Title</option></select>
+    </section>
+    <div class="resultbar"><span id="count">0 jobs</span><span id="sourceSummary"></span></div>
+    <section id="jobs" class="jobs"></section>
+    <section id="empty" class="empty hidden"><h2>No matching jobs</h2><p>Try changing the search or filters.</p></section>
+    <footer>Job Agent <span>•</span> Data is refreshed by GitHub Actions <span>•</span> Open each listing on its original platform</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
