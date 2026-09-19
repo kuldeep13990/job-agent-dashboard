@@ -4,58 +4,697 @@ const escapeHtml=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;'
 const strip=s=>String(s??'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
 const arr=v=>Array.isArray(v)?v:(typeof v==='string'?v.split(',').map(x=>x.trim()).filter(Boolean):[]);
 const unique=key=>[...new Set(state.jobs.map(j=>j[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
-function normalize(payload){state.jobs=Array.isArray(payload)?payload:(payload?.jobs||[]);state.meta=payload?.meta||{};}
+
+function sourceOf(j){
+  return String(j.source||j.provider||'').trim()||'Unknown';
+}
+
+function jobUrl(j){
+  return j.original_url||j.job_url||j.jobUrl||j.url||j.redirect_url||'#';
+}
+
+function normalize(payload){
+  state.jobs=Array.isArray(payload)?payload:(payload?.jobs||[]);
+  state.meta=payload?.meta||{};
+}
+
 async function load(){
   $('jobs').innerHTML='<div class="empty"><div class="empty-icon">↻</div><h2>Loading jobs…</h2><p>Fetching the latest dashboard data.</p></div>';
-  try{const r=await fetch('data/jobs.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('data unavailable');normalize(await r.json());renderFilters();render();}
-  catch(e){$('jobs').innerHTML='<div class="empty"><div class="empty-icon">!</div><h2>Dashboard data unavailable</h2><p>Check that data/jobs.json exists and refresh the page.</p></div>';}
+
+  try{
+    const r=await fetch('data/jobs.json?ts='+Date.now(),{cache:'no-store'});
+
+    if(!r.ok)throw new Error('data unavailable');
+
+    normalize(await r.json());
+    renderFilters();
+    render();
+
+  }catch(e){
+
+    $('jobs').innerHTML='<div class="empty"><div class="empty-icon">!</div><h2>Dashboard data unavailable</h2><p>Check that data/jobs.json exists and refresh the page.</p></div>';
+
+  }
 }
-function populate(id,values){const el=$(id);const current=el.value;while(el.options.length>1)el.remove(1);values.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o)});if(values.includes(current))el.value=current;}
-function renderFilters(){populate('location',unique('location'));populate('employment',unique('employment_type'));populate('experience',unique('experience'));}
+
+function populate(id,values){
+  const el=$(id);
+
+  if(!el)return;
+
+  const current=el.value;
+
+  while(el.options.length>1)el.remove(1);
+
+  values.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v;
+    o.textContent=v;
+    el.appendChild(o);
+  });
+
+  if(values.includes(current))el.value=current;
+}
+
+function addSourceFilter(){
+
+  if($('source')||!$('location'))return;
+
+  const location=$('location');
+
+  const source=document.createElement('select');
+
+  source.id='source';
+  source.setAttribute('aria-label','Filter by job source');
+  source.className=location.className;
+
+  const option=document.createElement('option');
+
+  option.value='';
+  option.textContent='All Sources';
+
+  source.appendChild(option);
+
+  const parent=location.parentElement;
+
+  if(parent&&parent.parentElement){
+    parent.parentElement.insertBefore(source,parent);
+  }
+}
+
+function renderFilters(){
+
+  addSourceFilter();
+
+  populate(
+    'source',
+    [...new Set(
+      state.jobs
+        .map(sourceOf)
+        .filter(Boolean)
+    )].sort((a,b)=>a.localeCompare(b))
+  );
+
+  populate('location',unique('location'));
+  populate('employment',unique('employment_type'));
+  populate('experience',unique('experience'));
+}
+
 function filteredJobs(){
-  const q=$('search').value.toLowerCase().trim(),loc=$('location').value,type=$('employment').value,exp=$('experience').value,min=0,sort=$('sort').value;
-  const jobs=state.jobs.filter(j=>{const hay=[j.title,j.company,j.location,j.description,j.skills,j.source,j.employment_type,j.experience].filter(Boolean).join(' ').toLowerCase();return(!q||hay.includes(q))&&(!loc||j.location===loc)&&(!type||j.employment_type===type)&&(!exp||j.experience===exp)&&Number(j.match_score||0)>=min});
-  jobs.sort((a,b)=>sort==='company'?String(a.company||'').localeCompare(String(b.company||'')):sort==='title'?String(a.title||'').localeCompare(String(b.title||'')):sort==='newest'?String(b.posted_at||'').localeCompare(String(a.posted_at||'')):Number(b.match_score||0)-Number(a.match_score||0));return jobs;
+
+  const q=$('search').value.toLowerCase().trim();
+
+  const source=$('source')?.value||'';
+
+  const loc=$('location').value;
+
+  const type=$('employment').value;
+
+  const exp=$('experience').value;
+
+  const sort=$('sort').value;
+
+  const jobs=state.jobs.filter(j=>{
+
+    const hay=[
+      j.title,
+      j.company,
+      j.companyName,
+      j.location,
+      j.description,
+      j.skills,
+      j.source,
+      j.provider,
+      j.employment_type,
+      j.experience,
+      j.experienceText
+    ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+    return(
+      (!q||hay.includes(q))&&
+      (!source||sourceOf(j)===source)&&
+      (!loc||j.location===loc)&&
+      (!type||j.employment_type===type)&&
+      (!exp||j.experience===exp)
+    );
+  });
+
+  jobs.sort((a,b)=>
+
+    sort==='company'
+      ?String(a.company||a.companyName||'')
+        .localeCompare(String(b.company||b.companyName||''))
+
+    :sort==='title'
+      ?String(a.title||'')
+        .localeCompare(String(b.title||''))
+
+    :sort==='newest'
+      ?String(b.posted_at||b.postedAt||b.postedDate||'')
+        .localeCompare(String(a.posted_at||a.postedAt||a.postedDate||''))
+
+    :Number(b.match_score||0)-Number(a.match_score||0)
+
+  );
+
+  return jobs;
 }
-function render(){const jobs=filteredJobs();$('count').textContent=`Showing ${jobs.length} of ${state.jobs.length} matched job${state.jobs.length===1?'':'s'}`;renderChips();$('jobs').innerHTML=jobs.map((j,i)=>card(j,i)).join('');$('empty').classList.toggle('hidden',jobs.length>0);renderStats();}
-function renderChips(){const chips=[];if($('search').value.trim())chips.push(['Search', $('search').value.trim(),'search']);if($('location').value)chips.push(['Location',$('location').value,'location']);if($('employment').value)chips.push(['Job type',$('employment').value,'employment']);if($('experience').value)chips.push(['Experience',$('experience').value,'experience']);$('chips').innerHTML=chips.map(([label,val,key])=>`<span class="chip">${escapeHtml(label)}: ${escapeHtml(val)} <button data-clear="${key}" aria-label="Remove ${escapeHtml(label)} filter">×</button></span>`).join('');}
-function logoFor(j,i){const c=String(j.company||'Company').trim();return escapeHtml((c[0]||'C').toUpperCase());}
+
+function render(){
+
+  const jobs=filteredJobs();
+
+  $('count').textContent=
+    `Showing ${jobs.length} of ${state.jobs.length} matched job${state.jobs.length===1?'':'s'}`;
+
+  renderChips();
+
+  $('jobs').innerHTML=
+    jobs.map((j,i)=>card(j,i)).join('');
+
+  $('empty').classList.toggle(
+    'hidden',
+    jobs.length>0
+  );
+
+  renderStats();
+}
+
+function renderChips(){
+
+  const chips=[];
+
+  if($('search').value.trim())
+    chips.push([
+      'Search',
+      $('search').value.trim(),
+      'search'
+    ]);
+
+  if($('source')?.value)
+    chips.push([
+      'Source',
+      $('source').value,
+      'source'
+    ]);
+
+  if($('location').value)
+    chips.push([
+      'Location',
+      $('location').value,
+      'location'
+    ]);
+
+  if($('employment').value)
+    chips.push([
+      'Job type',
+      $('employment').value,
+      'employment'
+    ]);
+
+  if($('experience').value)
+    chips.push([
+      'Experience',
+      $('experience').value,
+      'experience'
+    ]);
+
+  $('chips').innerHTML=chips.map(
+    ([label,val,key])=>
+      `<span class="chip">
+        ${escapeHtml(label)}: ${escapeHtml(val)}
+        <button
+          data-clear="${key}"
+          aria-label="Remove ${escapeHtml(label)} filter"
+        >×</button>
+      </span>`
+  ).join('');
+}
+
+function logoFor(j){
+
+  const c=String(
+    j.company||j.companyName||'Company'
+  ).trim();
+
+  return escapeHtml(
+    (c[0]||'C').toUpperCase()
+  );
+}
+
 function card(j,i){
+
   const skills=arr(j.skills).slice(0,6);
-  const exp=j.experience||'';
-  const type=j.employment_type||'Full-time';
-  const location=j.location||'Location not listed';
-  const company=j.company||'Company not listed';
-  const score=Number(j.match_score||0);
-  const id=j.id||j.job_id||j.original_url||`${j.title||'job'}-${company}`;
-  const saved=state.saved.has(String(id));
-  const desc=strip(j.description);
-  const posted=j.posted_at?formatPosted(j.posted_at):'Date not listed';
-  return `<article class="job">
-    <div class="company-logo alt${i%5}">${logoFor(j,i)}</div>
+
+  const exp=
+    j.experience||
+    j.experienceText||
+    '';
+
+  const type=
+    j.employment_type||
+    j.workMode||
+    'Full-time';
+
+  const location=
+    j.location||
+    'Location not listed';
+
+  const company=
+    j.company||
+    j.companyName||
+    'Company not listed';
+
+  const score=
+    Number(j.match_score||0);
+
+  const source=
+    sourceOf(j);
+
+  const url=
+    jobUrl(j);
+
+  const id=
+    j.id||
+    j.job_id||
+    j.jobId||
+    url||
+    `${j.title||'job'}-${company}`;
+
+  const saved=
+    state.saved.has(String(id));
+
+  const desc=
+    strip(j.description);
+
+  const postedValue=
+    j.posted_at||
+    j.postedAt||
+    j.postedDate;
+
+  const posted=
+    postedValue
+      ?formatPosted(postedValue)
+      :'Date not listed';
+
+  return `
+  <article class="job">
+
+    <div class="company-logo alt${i%5}">
+      ${logoFor(j)}
+    </div>
+
     <div class="job-main">
+
       <div class="job-title-row">
-        <h2 class="job-title">${escapeHtml(j.title||'Untitled role')}</h2>
-        <span class="score">${score}% Match</span>
+
+        <h2 class="job-title">
+          ${escapeHtml(j.title||'Untitled role')}
+        </h2>
+
+        <span class="score">
+          ${score}% Match
+        </span>
+
       </div>
-      <div class="company">${escapeHtml(company)}</div>
+
+      <div class="company">
+        ${escapeHtml(company)}
+      </div>
+
       <div class="meta-grid">
-        <span class="meta-item"><span class="meta-icon">⌖</span>${escapeHtml(location)}</span>
-        <span class="meta-item"><span class="meta-icon">▣</span>${escapeHtml(type)}</span>
-        <span class="meta-item"><span class="meta-icon">◒</span>${escapeHtml(exp||'Experience not listed')}</span>
-        <span class="meta-item"><span class="meta-icon">♧</span>${escapeHtml(j.company_size||'Company size: Unknown')}</span>
+
+        <span class="meta-item">
+          <span class="meta-icon">⌖</span>
+          ${escapeHtml(location)}
+        </span>
+
+        <span class="meta-item">
+          <span class="meta-icon">▣</span>
+          ${escapeHtml(type)}
+        </span>
+
+        <span class="meta-item">
+          <span class="meta-icon">◒</span>
+          ${escapeHtml(exp||'Experience not listed')}
+        </span>
+
+        <span class="meta-item">
+          <span class="meta-icon">♧</span>
+          ${escapeHtml(j.company_size||'Company size: Unknown')}
+        </span>
+
       </div>
-      ${skills.length?`<div class="skills">${skills.map((s,n)=>`<span class="tag${n>3?' neutral':''}">${escapeHtml(s)}</span>`).join('')}</div>`:''}
-      ${desc?`<div class="description">${escapeHtml(desc)}</div>`:''}
+
+      ${
+        skills.length
+        ?`
+        <div class="skills">
+
+          ${skills.map(
+            (s,n)=>
+              `<span class="tag${n>3?' neutral':''}">
+                ${escapeHtml(s)}
+              </span>`
+          ).join('')}
+
+        </div>
+        `
+        :''
+      }
+
+      ${
+        desc
+        ?`
+        <div class="description">
+          ${escapeHtml(desc)}
+        </div>
+        `
+        :''
+      }
+
     </div>
+
     <div class="job-actions">
-      <div class="posted">${escapeHtml(posted)}</div>
-      <button class="bookmark ${saved?'saved':''}" data-save="${escapeHtml(String(id))}" title="${saved?'Remove saved job':'Save job'}" aria-label="${saved?'Remove saved job':'Save job'}">${saved?'★':'☆'}</button>
-      <a class="view" href="${escapeHtml(j.original_url||j.redirect_url||'#')}" target="_blank" rel="noopener">View Job ↗</a>
+
+      <div class="posted">
+        ${escapeHtml(posted)}
+      </div>
+
+      <div class="source-badge">
+        ${escapeHtml(source)}
+      </div>
+
+      <button
+        class="bookmark ${saved?'saved':''}"
+        data-save="${escapeHtml(String(id))}"
+        title="${saved?'Remove saved job':'Save job'}"
+        aria-label="${saved?'Remove saved job':'Save job'}"
+      >
+        ${saved?'★':'☆'}
+      </button>
+
+      <a
+        class="view"
+        href="${escapeHtml(url)}"
+        target="_blank"
+        rel="noopener"
+      >
+        View Job ↗
+      </a>
+
     </div>
+
   </article>`;
 }
-function formatPosted(value){const d=new Date(value);if(Number.isNaN(d.getTime()))return 'Date not listed';return d.toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'});}
-function renderStats(){const m=state.meta;const sources=Object.keys(m.sources||{});const matched=state.jobs.length;const uniqueIds=new Set(state.jobs.map(j=>j.id||j.job_id||j.original_url||`${j.title}-${j.company}`));const source=sources[0]||state.jobs.find(j=>j.source)?.source||'Adzuna';const cards=[['▣','Jobs Collected',m.collected_jobs??m.total_jobs??matched,'From '+source],['▤','Unique Jobs',m.unique_jobs??uniqueIds.size,'After deduplication'],['✦','New Jobs',m.new_jobs??0,'Added this run'],['☆','Matched Jobs',m.saved_matches??matched,'Match score ≥ 60%'],['◎','Source Status',source,'Live job search via '+source]];$('stats').innerHTML=cards.map((c,i)=>i===4?`<div class="stat"><div class="stat-icon">${c[0]}</div><div class="stat-copy"><div class="stat-label">${c[1]}</div><div class="source-status"><span class="mini-dot"></span>${escapeHtml(c[2])}<span class="enabled">Enabled</span></div><div class="stat-sub">${escapeHtml(c[3])}</div></div></div>`:`<div class="stat"><div class="stat-icon">${c[0]}</div><div class="stat-copy"><div class="stat-label">${c[1]}</div><div class="stat-value">${escapeHtml(c[2])}</div><div class="stat-sub">${escapeHtml(c[3])}</div></div></div>`).join('');$('sourceName').textContent=source;const raw=m.last_run_utc||m.updated_at||m.updated_at_utc;const formatted=raw?new Date(raw).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true,timeZoneName:'short'}):'Waiting for first run';$('updated').textContent=formatted;$('footerUpdated').textContent='Last updated: '+formatted;}
-function clearFilters(){ $('search').value='';$('location').value='';$('employment').value='';$('experience').value='';$('sort').value='score';render(); }
-$('search').addEventListener('input',render);['location','employment','experience','sort'].forEach(id=>$(id).addEventListener('change',render));$('clear').addEventListener('click',clearFilters);$('emptyClear').addEventListener('click',clearFilters);$('refresh').addEventListener('click',()=>load());$('runSearch').addEventListener('click',()=>{load();});$('chips').addEventListener('click',e=>{const key=e.target.dataset.clear;if(!key)return;if(key==='search')$('search').value='';else $(key).value='';render();});$('jobs').addEventListener('click',e=>{const btn=e.target.closest('[data-save]');if(!btn)return;const id=String(btn.dataset.save);state.saved.has(id)?state.saved.delete(id):state.saved.add(id);localStorage.setItem('job-agent-saved',JSON.stringify([...state.saved]));render();});load();
+
+function formatPosted(value){
+
+  const d=new Date(value);
+
+  if(Number.isNaN(d.getTime()))
+    return 'Date not listed';
+
+  return d.toLocaleDateString(
+    undefined,
+    {
+      day:'numeric',
+      month:'long',
+      year:'numeric'
+    }
+  );
+}
+
+function renderStats(){
+
+  const m=state.meta;
+
+  const sources=[
+    ...new Set(
+      state.jobs
+        .map(sourceOf)
+        .filter(Boolean)
+    )
+  ];
+
+  const matched=
+    state.jobs.filter(
+      j=>Number(j.match_score||0)>=60
+    ).length;
+
+  const uniqueIds=
+    new Set(
+      state.jobs.map(
+        j=>
+          j.id||
+          j.job_id||
+          j.jobId||
+          jobUrl(j)||
+          `${j.title}-${j.company||j.companyName}`
+      )
+    );
+
+  const sourceLabel=
+    sources.length
+      ?sources.join(' + ')
+      :'Unknown';
+
+  const cards=[
+
+    [
+      '▣',
+      'Jobs Collected',
+      m.collected_jobs??m.total_jobs??state.jobs.length,
+      'From '+sourceLabel
+    ],
+
+    [
+      '▤',
+      'Unique Jobs',
+      m.unique_jobs??uniqueIds.size,
+      'After deduplication'
+    ],
+
+    [
+      '✦',
+      'New Jobs',
+      m.new_jobs??0,
+      'Added this run'
+    ],
+
+    [
+      '☆',
+      'Matched Jobs',
+      matched,
+      'Match score ≥ 60%'
+    ],
+
+    [
+      '◎',
+      'Source Status',
+      sourceLabel,
+      'Live job search via '+sourceLabel
+    ]
+
+  ];
+
+  $('stats').innerHTML=
+    cards.map(
+      (c,i)=>
+        i===4
+        ?
+        `<div class="stat">
+
+          <div class="stat-icon">
+            ${c[0]}
+          </div>
+
+          <div class="stat-copy">
+
+            <div class="stat-label">
+              ${c[1]}
+            </div>
+
+            <div class="source-status">
+
+              <span class="mini-dot"></span>
+
+              ${escapeHtml(c[2])}
+
+              <span class="enabled">
+                Enabled
+              </span>
+
+            </div>
+
+            <div class="stat-sub">
+              ${escapeHtml(c[3])}
+            </div>
+
+          </div>
+
+        </div>`
+
+        :
+        `<div class="stat">
+
+          <div class="stat-icon">
+            ${c[0]}
+          </div>
+
+          <div class="stat-copy">
+
+            <div class="stat-label">
+              ${c[1]}
+            </div>
+
+            <div class="stat-value">
+              ${escapeHtml(c[2])}
+            </div>
+
+            <div class="stat-sub">
+              ${escapeHtml(c[3])}
+            </div>
+
+          </div>
+
+        </div>`
+    ).join('');
+
+  $('sourceName').textContent=
+    sourceLabel;
+
+  const raw=
+    m.last_run_utc||
+    m.updated_at||
+    m.updated_at_utc;
+
+  const formatted=
+    raw
+      ?
+      new Date(raw).toLocaleString(
+        undefined,
+        {
+          month:'short',
+          day:'numeric',
+          year:'numeric',
+          hour:'2-digit',
+          minute:'2-digit',
+          hour12:true,
+          timeZoneName:'short'
+        }
+      )
+      :
+      'Waiting for first run';
+
+  $('updated').textContent=
+    formatted;
+
+  $('footerUpdated').textContent=
+    'Last updated: '+formatted;
+}
+
+function clearFilters(){
+
+  $('search').value='';
+
+  if($('source'))
+    $('source').value='';
+
+  $('location').value='';
+
+  $('employment').value='';
+
+  $('experience').value='';
+
+  $('sort').value='score';
+
+  render();
+}
+
+$('search').addEventListener(
+  'input',
+  render
+);
+
+[
+  'location',
+  'employment',
+  'experience',
+  'sort'
+].forEach(
+  id=>
+    $(id).addEventListener(
+      'change',
+      render
+    )
+);
+
+$('clear').addEventListener(
+  'click',
+  clearFilters
+);
+
+$('emptyClear').addEventListener(
+  'click',
+  clearFilters
+);
+
+$('refresh').addEventListener(
+  'click',
+  ()=>load()
+);
+
+$('runSearch').addEventListener(
+  'click',
+  ()=>load()
+);
+
+$('chips').addEventListener(
+  'click',
+  e=>{
+
+    const key=
+      e.target.dataset.clear;
+
+    if(!key)return;
+
+    if(key==='search')
+      $('search').value='';
+
+    else if($(key))
+      $(key).value='';
+
+    render();
+  }
+);
+
+$('jobs').addEventListener(
+  'click',
+  e=>{
+
+    const btn=
+      e.target.closest('[data-save]');
+
+    if(!btn)return;
+
+    const id=
+      String(btn.dataset.save);
+
+    state.saved.has(id)
+      ?state.saved.delete(id)
+      :state.saved.add(id);
+
+    localStorage.setItem(
+      'job-agent-saved',
+      JSON.stringify([...state.saved])
+    );
+
+    render();
+  }
+);
+
+load();
