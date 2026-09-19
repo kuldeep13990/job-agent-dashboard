@@ -305,6 +305,33 @@ function parseDate(value) {
 }
 
 /*
+  Experience filter ranges. Every job (Adzuna or Naukri) is put in
+  one of these, based on the minimum years asked for. The card still
+  shows the original text (e.g. "2-5 Yrs").
+*/
+function bucketYears(low) {
+  if (low <= 2) return '0-2 years';
+  if (low <= 5) return '3-5 years';
+  if (low <= 9) return '6-9 years';
+  return '10+ years';
+}
+
+function experienceBucket(minYears, text) {
+  if (
+    minYears !== null &&
+    minYears !== undefined &&
+    minYears !== '' &&
+    Number.isFinite(Number(minYears))
+  ) {
+    return bucketYears(Number(minYears));
+  }
+
+  const m = String(text || '').match(/(\d{1,2})/);
+
+  return m ? bucketYears(Number(m[1])) : '';
+}
+
+/*
   Adzuna does not return experience or employment type, so the
   two filters would always be empty. Derive them from the text
   when the source did not provide a value.
@@ -337,10 +364,7 @@ function inferExperience(text) {
       Group by the minimum years asked for, so the dropdown
       has a handful of usable ranges instead of dozens.
     */
-    if (low <= 2) return '0-2 years';
-    if (low <= 5) return '3-5 years';
-    if (low <= 9) return '6-9 years';
-    return '10+ years';
+    return bucketYears(low);
   }
 
   return '';
@@ -484,6 +508,10 @@ function normalizeJob(raw) {
     company_logo: companyLogo,
     location,
     experience,
+    experience_bucket: experienceBucket(
+      raw.experience_min ?? raw.experienceMin ?? null,
+      experience
+    ),
     experience_min:
       raw.experience_min ??
       raw.experienceMin ??
@@ -995,7 +1023,7 @@ function renderFilters() {
 
   populate(
     'experience',
-    unique('experience')
+    unique('experience_bucket')
   );
 
   /*
@@ -1051,7 +1079,7 @@ function filteredJobs() {
       (!source || job.source === source) &&
       (!location || job.location === location) &&
       (!type || job.employment_type === type) &&
-      (!experience || job.experience === experience)
+      (!experience || job.experience_bucket === experience)
     );
   });
 
