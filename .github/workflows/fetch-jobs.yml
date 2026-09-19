@@ -166,31 +166,49 @@ jobs:
                   "redirect_url": url,
               }
 
-          def run_naukri():
-              print("Starting Naukri scrape...")
-              print("Using Apify Actor ID: ***")
-
-              url = (
-                  f"https://api.apify.com/v2/acts/"
-                  f"{NAUKRI_APIFY_ACTOR_ID}/runs"
-              )
-
-              payload = {
-                  "searchKeyword": ",".join(SEARCHES),
-                  "location": ",".join(LOCATIONS),
+          def naukri_input(keyword):
+              # 'keyword' is required by the actor (this was the HTTP 400 error).
+              # Open the actor's Input tab on Apify and add any other fields
+              # it supports (location, max results, ...) here.
+              return {
+                  "keyword": keyword,
+                  # "location": "India",   # enable only after checking the Input tab
+                  # "maxJobs": 100,        # field name depends on the actor
               }
 
+          def print_actor_input_schema():
+              try:
+                  r = requests.get(
+                      f"https://api.apify.com/v2/acts/{NAUKRI_APIFY_ACTOR_ID}"
+                      "/builds/default",
+                      params={"token": APIFY_API_TOKEN},
+                      timeout=60,
+                  )
+                  r.raise_for_status()
+                  schema = (
+                      r.json().get("data", {})
+                      .get("actorDefinition", {})
+                      .get("input", {})
+                  )
+                  print("Actor input schema:")
+                  print(json.dumps(schema, indent=2)[:3000])
+              except Exception as exc:
+                  print(f"Could not fetch actor input schema: {exc}")
+
+          def run_naukri_once(keyword):
+              print(f"Starting Naukri scrape for: {keyword}")
+
               response = requests.post(
-                  url,
+                  f"https://api.apify.com/v2/acts/{NAUKRI_APIFY_ACTOR_ID}/runs",
                   params={"token": APIFY_API_TOKEN},
-                  json=payload,
+                  json=naukri_input(keyword),
                   timeout=120,
               )
 
               if response.status_code >= 400:
+                  print_actor_input_schema()
                   raise RuntimeError(
-                      f"HTTP {response.status_code}: "
-                      f"{response.text[:1000]}"
+                      f"HTTP {response.status_code}: {response.text[:1000]}"
                   )
 
               run = response.json().get("data", {})
@@ -201,16 +219,11 @@ jobs:
 
               print(f"Apify run started: {run_id}")
 
-              status_url = (
-                  f"https://api.apify.com/v2/actor-runs/{run_id}"
-              )
+              status, data = None, {}
 
-              status = None
-              data = {}
-
-              for _ in range(72):
+              for _ in range(120):  # up to ~10 minutes
                   r = requests.get(
-                      status_url,
+                      f"https://api.apify.com/v2/actor-runs/{run_id}",
                       params={"token": APIFY_API_TOKEN},
                       timeout=60,
                   )
@@ -219,36 +232,22 @@ jobs:
                   data = r.json().get("data", {})
                   status = data.get("status")
 
-                  if status in {
-                      "SUCCEEDED",
-                      "FAILED",
-                      "ABORTED",
-                      "TIMED-OUT",
-                  }:
+                  if status in {"SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"}:
                       break
 
                   time.sleep(5)
 
               if status != "SUCCEEDED":
-                  raise RuntimeError(
-                      f"Apify Naukri run ended with status: {status}"
-                  )
+                  raise RuntimeError(f"Apify Naukri run ended with status: {status}")
 
               dataset_id = data.get("defaultDatasetId")
 
               if not dataset_id:
-                  raise RuntimeError(
-                      "Apify run has no default dataset"
-                  )
-
-              items_url = (
-                  f"https://api.apify.com/v2/datasets/"
-                  f"{dataset_id}/items"
-              )
+                  raise RuntimeError("Apify run has no default dataset")
 
               items_response = requests.get(
-                  items_url,
-                  params={"token": APIFY_API_TOKEN},
+                  f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                  params={"token": APIFY_API_TOKEN, "clean": "true"},
                   timeout=120,
               )
               items_response.raise_for_status()
@@ -258,20 +257,33 @@ jobs:
               if not isinstance(raw, list):
                   raw = []
 
+              # Shows the real field names so normalise_naukri() can be checked.
+              if raw and isinstance(raw[0], dict):
+                  print("Naukri sample item keys:", sorted(raw[0].keys()))
+
               jobs = [
                   normalise_naukri(item)
                   for item in raw
                   if isinstance(item, dict)
               ]
 
-              jobs = [
-                  job
-                  for job in jobs
-                  if job.get("title") or job.get("original_url")
-              ]
+              jobs = [j for j in jobs if j.get("title") or j.get("original_url")]
 
-              print(f"Naukri returned {len(jobs)} jobs")
+              print(f"Naukri '{keyword}' returned {len(jobs)} jobs")
               return jobs
+
+          def run_naukri():
+              all_jobs = []
+
+              # One run per search term (the actor takes a single keyword).
+              for keyword in SEARCHES:
+                  try:
+                      all_jobs.extend(run_naukri_once(keyword))
+                  except Exception as exc:
+                      print(f"::warning::Naukri '{keyword}' failed: {exc}")
+
+              print(f"Naukri total: {len(all_jobs)} jobs")
+              return all_jobs
 
           def adzuna_search(query, location):
               print(f"Fetching Adzuna: {query} / {location}")
@@ -379,7 +391,7 @@ jobs:
           try:
               naukri_jobs = run_naukri()
           except Exception as exc:
-              print(f"Naukri scrape failed: {exc}")
+              print(f"::warning::Naukri scrape failed: {exc}")
 
           adzuna_jobs = []
 
