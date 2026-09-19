@@ -1,6 +1,14 @@
+const PAGE_SIZES = [10, 20, 50];
+
 const state = {
   jobs: [],
   meta: {},
+  page: 1,
+  pageSize: (() => {
+    const saved = Number(localStorage.getItem('job-agent-page-size'));
+    return PAGE_SIZES.includes(saved) ? saved : 10;
+  })(),
+  expanded: new Set(),
   saved: new Set(
     JSON.parse(localStorage.getItem('job-agent-saved') || '[]') || []
   )
@@ -685,6 +693,8 @@ async function load() {
 
     normalizePayload(payload);
 
+    state.page = 1;
+
     renderFilters();
     render();
 
@@ -856,7 +866,7 @@ function ensureSourceFilter() {
 
   row.insertBefore(box, searchBox.nextSibling);
 
-  source.addEventListener('change', render);
+  source.addEventListener('change', applyFilters);
 
   return source;
 }
@@ -1230,6 +1240,17 @@ function card(job, index) {
   const description =
     strip(job.description);
 
+  const salary =
+    formatSalary(job);
+
+  const expanded =
+    state.expanded.has(String(id));
+
+  const sourceClass =
+    'source-' + String(job.source || 'unknown')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '');
+
   const posted =
     job.posted_at
       ? formatPosted(job.posted_at)
@@ -1251,6 +1272,10 @@ function card(job, index) {
 
           <span class="score">
             ${score}% Match
+          </span>
+
+          <span class="source-badge ${escapeHtml(sourceClass)}">
+            ${escapeHtml(job.source || 'Unknown')}
           </span>
         </div>
 
@@ -1276,6 +1301,17 @@ function card(job, index) {
               experience || 'Experience not listed'
             )}
           </span>
+
+          ${
+            salary
+              ? `
+                <span class="meta-item">
+                  <span class="meta-icon">₹</span>
+                  ${escapeHtml(salary)}
+                </span>
+              `
+              : ''
+          }
 
           <span class="meta-item">
             <span class="meta-icon">♧</span>
@@ -1308,8 +1344,21 @@ function card(job, index) {
         ${
           description
             ? `
-              <div class="description">
-                ${escapeHtml(description)}
+              <div class="description-wrap">
+                <div class="description${expanded ? '' : ' is-clamped'}">
+                  ${escapeHtml(description)}
+                </div>
+
+                <button
+                  type="button"
+                  class="read-more"
+                  data-toggle="${escapeHtml(String(id))}"
+                  aria-expanded="${expanded}"
+                  ${expanded ? '' : 'hidden'}
+                >
+                  <span class="rm-label">${expanded ? 'Show less' : 'Read more'}</span>
+                  <span class="rm-icon" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span>
+                </button>
               </div>
             `
             : ''
@@ -1322,10 +1371,6 @@ function card(job, index) {
         <div class="posted">
           ${escapeHtml(posted)}
         </div>
-
-        <span class="job-source">
-          ${escapeHtml(job.source)}
-        </span>
 
         <button
           class="bookmark ${saved ? 'saved' : ''}"
@@ -1600,6 +1645,425 @@ function renderStats() {
 
 /*
   ============================================================
+  SALARY
+  ============================================================
+*/
+
+function lakhs(n) {
+  return String(Math.round((n / 100000) * 10) / 10)
+    .replace(/\.0$/, '');
+}
+
+/*
+  Returns e.g. "₹7-14 LPA", or '' when the job has no usable salary.
+*/
+function formatSalary(job) {
+  const min = Number(job.salary_min);
+  const max = Number(job.salary_max);
+
+  const hasMin = Number.isFinite(min) && min >= 10000;
+  const hasMax = Number.isFinite(max) && max >= 10000;
+
+  if (hasMin || hasMax) {
+    const low = lakhs(hasMin ? min : max);
+    const high = lakhs(hasMax ? max : min);
+
+    return low === high
+      ? `₹${low} LPA`
+      : `₹${low}-${high} LPA`;
+  }
+
+  const m = String(job.salary || '').match(
+    /^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*lacs?/i
+  );
+
+  if (m && (Number(m[1]) > 0 || Number(m[2]) > 0)) {
+    return m[1] === m[2]
+      ? `₹${m[1]} LPA`
+      : `₹${m[1]}-${m[2]} LPA`;
+  }
+
+  return '';
+}
+
+/*
+  ============================================================
+  UI STYLES: source badge, read more, pagination
+  ============================================================
+*/
+
+function injectUiStyles() {
+  if ($('ui-extra-styles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'ui-extra-styles';
+
+  style.textContent = `
+    .job-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 10px;
+    }
+
+    .source-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4;
+      white-space: nowrap;
+      background: #eef1f6;
+      color: #475569;
+    }
+
+    .source-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .source-badge.source-naukri {
+      background: #fff1e6;
+      color: #c2410c;
+    }
+
+    .source-badge.source-adzuna {
+      background: #e8f0ff;
+      color: #1d4ed8;
+    }
+
+    .description.is-clamped {
+      display: -webkit-box !important;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 5;
+      overflow: hidden;
+    }
+
+    .read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #2563eb;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .read-more:hover {
+      text-decoration: underline;
+    }
+
+    .read-more[hidden] {
+      display: none !important;
+    }
+
+    .pagination {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px 16px;
+      margin: 20px 0 8px;
+    }
+
+    .pg-info,
+    .pg-size {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .pg-size select {
+      margin-left: 6px;
+      padding: 6px 8px;
+      border: 1px solid #dfe5ee;
+      border-radius: 8px;
+      background: #fff;
+      font: inherit;
+      color: inherit;
+    }
+
+    .pg-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pg-btn {
+      min-width: 38px;
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid #dfe5ee;
+      border-radius: 10px;
+      background: #fff;
+      font: inherit;
+      font-size: 14px;
+      color: #1e293b;
+      cursor: pointer;
+    }
+
+    .pg-btn:hover:not(:disabled):not(.active) {
+      background: #f1f5f9;
+    }
+
+    .pg-btn.active {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #fff;
+      font-weight: 600;
+      cursor: default;
+    }
+
+    .pg-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .pg-gap {
+      padding: 0 4px;
+      color: #94a3b8;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+/*
+  ============================================================
+  READ MORE / SHOW LESS
+  The button only appears when the text really is longer than
+  5 lines. Expanded jobs stay expanded after re-render.
+  ============================================================
+*/
+
+function initReadMore() {
+  document
+    .querySelectorAll('#jobs .description.is-clamped')
+    .forEach(el => {
+      const button =
+        el.parentElement?.querySelector('.read-more');
+
+      if (!button) return;
+
+      button.hidden =
+        !(el.scrollHeight > el.clientHeight + 1);
+    });
+}
+
+function toggleDescription(button) {
+  const id = String(button.dataset.toggle);
+  const open = !state.expanded.has(id);
+
+  if (open) {
+    state.expanded.add(id);
+  } else {
+    state.expanded.delete(id);
+  }
+
+  const desc =
+    button.parentElement.querySelector('.description');
+
+  if (desc) desc.classList.toggle('is-clamped', !open);
+
+  button.setAttribute('aria-expanded', String(open));
+  button.querySelector('.rm-label').textContent =
+    open ? 'Show less' : 'Read more';
+  button.querySelector('.rm-icon').textContent =
+    open ? '⌃' : '⌄';
+
+  /*
+    A collapsed card always keeps its button visible so the
+    user can expand it again after "Show less".
+  */
+  button.hidden = false;
+}
+
+/*
+  ============================================================
+  PAGINATION
+  ============================================================
+*/
+
+function ensurePagination() {
+  let nav = $('pagination');
+
+  if (nav) return nav;
+
+  const list = $('jobs');
+
+  if (!list) return null;
+
+  nav = document.createElement('nav');
+  nav.id = 'pagination';
+  nav.className = 'pagination';
+  nav.setAttribute('aria-label', 'Job pages');
+
+  list.insertAdjacentElement('afterend', nav);
+
+  nav.addEventListener('click', event => {
+    const button = event.target.closest('[data-page]');
+
+    if (!button || button.disabled) return;
+
+    goToPage(Number(button.dataset.page));
+  });
+
+  nav.addEventListener('change', event => {
+    const select =
+      event.target.closest('[data-page-size]');
+
+    if (!select) return;
+
+    state.pageSize = Number(select.value);
+    localStorage.setItem(
+      'job-agent-page-size',
+      String(state.pageSize)
+    );
+
+    state.page = 1;
+    render();
+  });
+
+  return nav;
+}
+
+/*
+  1 … 4 5 6 … 20 style page list.
+*/
+function pageList(current, total) {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  let start = Math.max(2, current - 1);
+  let end = Math.min(total - 1, current + 1);
+
+  if (current <= 3) {
+    start = 2;
+    end = 4;
+  }
+
+  if (current >= total - 2) {
+    start = total - 3;
+    end = total - 1;
+  }
+
+  const pages = [1];
+
+  if (start > 2) pages.push('…');
+
+  for (let i = start; i <= end; i++) pages.push(i);
+
+  if (end < total - 1) pages.push('…');
+
+  pages.push(total);
+
+  return pages;
+}
+
+function renderPagination(totalItems, totalPages) {
+  const nav = ensurePagination();
+
+  if (!nav) return;
+
+  if (!totalItems) {
+    nav.innerHTML = '';
+    return;
+  }
+
+  const current = state.page;
+
+  const buttons = totalPages > 1
+    ? `
+      <button
+        type="button"
+        class="pg-btn"
+        data-page="${current - 1}"
+        ${current === 1 ? 'disabled' : ''}
+        aria-label="Previous page"
+      >‹ Prev</button>
+
+      ${pageList(current, totalPages)
+        .map(p =>
+          p === '…'
+            ? '<span class="pg-gap">…</span>'
+            : `
+              <button
+                type="button"
+                class="pg-btn${p === current ? ' active' : ''}"
+                data-page="${p}"
+                ${p === current ? 'aria-current="page"' : ''}
+              >${p}</button>
+            `
+        )
+        .join('')}
+
+      <button
+        type="button"
+        class="pg-btn"
+        data-page="${current + 1}"
+        ${current === totalPages ? 'disabled' : ''}
+        aria-label="Next page"
+      >Next ›</button>
+    `
+    : '';
+
+  nav.innerHTML = `
+    <div class="pg-info">
+      Page ${current} of ${totalPages}
+    </div>
+
+    <div class="pg-buttons">
+      ${buttons}
+    </div>
+
+    <label class="pg-size">
+      Per page
+      <select data-page-size aria-label="Jobs per page">
+        ${PAGE_SIZES
+          .map(n => `
+            <option value="${n}"${n === state.pageSize ? ' selected' : ''}>${n}</option>
+          `)
+          .join('')}
+      </select>
+    </label>
+  `;
+}
+
+function goToPage(page) {
+  if (!Number.isFinite(page)) return;
+
+  state.page = page;
+  render();
+
+  const top = $('count') || $('jobs');
+
+  if (top && top.scrollIntoView) {
+    top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/*
+  Any search / filter / sort change starts again from page 1.
+*/
+function applyFilters() {
+  state.page = 1;
+  render();
+}
+
+/*
+  ============================================================
   RENDER
   ============================================================
 */
@@ -1608,20 +2072,44 @@ function render() {
   const jobs =
     filteredJobs();
 
-  $('count').textContent =
-    `Showing ${jobs.length} of ${state.jobs.length} ` +
-    `matched job${state.jobs.length === 1 ? '' : 's'}`;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(jobs.length / state.pageSize)
+  );
+
+  state.page = Math.min(
+    Math.max(1, state.page),
+    totalPages
+  );
+
+  const startIndex =
+    (state.page - 1) * state.pageSize;
+
+  const pageJobs = jobs.slice(
+    startIndex,
+    startIndex + state.pageSize
+  );
+
+  $('count').textContent = jobs.length
+    ? `Showing ${startIndex + 1}-${startIndex + pageJobs.length} ` +
+      `of ${jobs.length} matched job${jobs.length === 1 ? '' : 's'}` +
+      (
+        jobs.length !== state.jobs.length
+          ? ` (filtered from ${state.jobs.length})`
+          : ''
+      )
+    : `Showing 0 of ${state.jobs.length} matched jobs`;
 
   renderChips();
 
   $('jobs').innerHTML =
-    jobs.length
-      ? jobs
-          .map((job, index) =>
-            card(job, index)
-          )
-          .join('')
-      : '';
+    pageJobs
+      .map((job, index) =>
+        card(job, startIndex + index)
+      )
+      .join('');
+
+  renderPagination(jobs.length, totalPages);
 
   if ($('empty')) {
     $('empty').classList.toggle(
@@ -1631,6 +2119,8 @@ function render() {
   }
 
   renderStats();
+
+  initReadMore();
 }
 
 /*
@@ -1664,7 +2154,7 @@ function clearFilters() {
     $('sort').value = 'score';
   }
 
-  render();
+  applyFilters();
 }
 
 /*
@@ -1676,7 +2166,7 @@ function clearFilters() {
 if ($('search')) {
   $('search').addEventListener(
     'input',
-    render
+    applyFilters
   );
 }
 
@@ -1692,7 +2182,7 @@ if ($('search')) {
   if (element) {
     element.addEventListener(
       'change',
-      render
+      applyFilters
     );
   }
 });
@@ -1740,7 +2230,7 @@ if ($('chips')) {
         $(key).value = '';
       }
 
-      render();
+      applyFilters();
     }
   );
 }
@@ -1749,6 +2239,16 @@ if ($('jobs')) {
   $('jobs').addEventListener(
     'click',
     event => {
+      const toggle =
+        event.target.closest(
+          '[data-toggle]'
+        );
+
+      if (toggle) {
+        toggleDescription(toggle);
+        return;
+      }
+
       const button =
         event.target.closest(
           '[data-save]'
@@ -1782,5 +2282,16 @@ if ($('jobs')) {
   START
   ============================================================
 */
+
+injectUiStyles();
+
+window.addEventListener('resize', () => {
+  clearTimeout(window.__readMoreTimer);
+  window.__readMoreTimer = setTimeout(initReadMore, 150);
+});
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(initReadMore);
+}
 
 load();
