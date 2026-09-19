@@ -555,63 +555,47 @@ function populate(id, values, allLabel) {
 
 function ensureSourceFilter() {
   let source = $('source');
-
-  if (source) {
-    return source;
-  }
+  if (source) return source;
 
   const search = $('search');
-
-  if (!search) return null;
-
-  source = document.createElement('select');
-  source.id = 'source';
-  source.setAttribute('aria-label', 'Job source');
-
-  source.className = search.className || '';
+  const reference = $('location') || $('employment') || $('experience');
+  if (!search || !reference) return null;
 
   /*
-    Copy dimensions from another existing select so that
-    the source dropdown visually matches the other filters.
+    Find the outer box of the search field and of a reference filter,
+    i.e. the direct children of the shared filter row.
   */
-
-  const reference =
-    $('location') ||
-    $('employment') ||
-    $('experience');
-
-  if (reference) {
-    source.className = reference.className;
-
-    const computed = window.getComputedStyle(reference);
-
-    source.style.fontFamily = computed.fontFamily;
-    source.style.fontSize = computed.fontSize;
-    source.style.fontWeight = computed.fontWeight;
-    source.style.height = computed.height;
-    source.style.border = computed.border;
-    source.style.borderRadius = computed.borderRadius;
-    source.style.padding = computed.padding;
-    source.style.background = computed.background;
-    source.style.color = computed.color;
-    source.style.width = computed.width;
-    source.style.minWidth = computed.minWidth;
+  let searchBox = search;
+  while (
+    searchBox.parentElement &&
+    !searchBox.parentElement.contains(reference)
+  ) {
+    searchBox = searchBox.parentElement;
   }
 
-  const all = document.createElement('option');
-  all.value = '';
-  all.textContent = 'All Sources';
+  const row = searchBox.parentElement;
 
-  source.appendChild(all);
+  let refBox = reference;
+  while (refBox.parentElement && refBox.parentElement !== row) {
+    refBox = refBox.parentElement;
+  }
 
   /*
-    Put source immediately after the search field.
+    Clone a working filter box (icon + border + select) so the
+    Source filter looks exactly like the others.
   */
+  const box = refBox.cloneNode(true);
+  source = box.matches('select') ? box : box.querySelector('select');
 
-  search.parentNode.insertBefore(
-    source,
-    search.nextSibling
-  );
+  source.id = 'source';
+  source.setAttribute('aria-label', 'Job source');
+  source.innerHTML = '<option value="">All Sources</option>';
+  source.value = '';
+
+  /*
+    Put the new box AFTER the search box, as a sibling, not inside it.
+  */
+  row.insertBefore(box, searchBox.nextSibling);
 
   source.addEventListener('change', render);
 
