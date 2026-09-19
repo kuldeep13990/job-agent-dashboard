@@ -218,18 +218,164 @@ function calculateMatch(job) {
 
 /*
   ============================================================
+  SOURCES / DATE PARSING / FIELD INFERENCE
+  ============================================================
+*/
+
+/*
+  Every source the dashboard knows about. They always appear in
+  the "All Sources" dropdown, even when a source returned 0 jobs
+  in the last run (otherwise a failing source silently vanishes).
+*/
+const KNOWN_SOURCES = ['Adzuna', 'Naukri'];
+
+function canonicalSource(value, url) {
+  const text = String(value || '').trim().toLowerCase();
+  const link = String(url || '').toLowerCase();
+
+  for (const name of KNOWN_SOURCES) {
+    const key = name.toLowerCase();
+    if (text.includes(key)) return name;
+  }
+
+  if (!text) {
+    for (const name of KNOWN_SOURCES) {
+      if (link.includes(name.toLowerCase())) return name;
+    }
+    return 'Unknown';
+  }
+
+  return String(value).trim();
+}
+
+/*
+  Accepts ISO strings, epoch seconds/milliseconds and relative
+  text such as "3 days ago", "30+ days ago", "Just now".
+  Returns a Date or null.
+*/
+function parseDate(value) {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const raw = String(value).trim();
+
+  if (/^\d{10,13}$/.test(raw)) {
+    let n = Number(raw);
+    if (n < 1e12) n *= 1000;
+    const d = new Date(n);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  const text = raw.toLowerCase();
+
+  if (/^(just now|today|few (seconds|minutes|hours) ago)/.test(text)) {
+    return new Date();
+  }
+
+  if (text.startsWith('yesterday')) {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d;
+  }
+
+  const rel = text.match(
+    /(\d+)\+?\s*(minute|min|hour|hr|day|week|month|year)s?\s*ago/
+  );
+
+  if (rel) {
+    const n = Number(rel[1]);
+    const unit = rel[2];
+    const d = new Date();
+
+    if (unit === 'minute' || unit === 'min') d.setMinutes(d.getMinutes() - n);
+    else if (unit === 'hour' || unit === 'hr') d.setHours(d.getHours() - n);
+    else if (unit === 'day') d.setDate(d.getDate() - n);
+    else if (unit === 'week') d.setDate(d.getDate() - n * 7);
+    else if (unit === 'month') d.setMonth(d.getMonth() - n);
+    else if (unit === 'year') d.setFullYear(d.getFullYear() - n);
+
+    return d;
+  }
+
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/*
+  Adzuna does not return experience or employment type, so the
+  two filters would always be empty. Derive them from the text
+  when the source did not provide a value.
+*/
+
+function inferExperience(text) {
+  const t = String(text || '');
+  const re =
+    /(\d{1,2})\s*(?:\+|(?:-|–|to)\s*(\d{1,2}))?\s*(?:years?|yrs?)\b/gi;
+
+  let m;
+
+  while ((m = re.exec(t))) {
+    const low = Number(m[1]);
+    const high = m[2] ? Number(m[2]) : null;
+
+    if (low > 30) continue;
+    if (high !== null && (high < low || high > 40)) continue;
+
+    const context = t
+      .slice(
+        Math.max(0, m.index - 60),
+        m.index + m[0].length + 60
+      )
+      .toLowerCase();
+
+    if (!/experience|\bexp\b/.test(context)) continue;
+
+    /*
+      Group by the minimum years asked for, so the dropdown
+      has a handful of usable ranges instead of dozens.
+    */
+    if (low <= 2) return '0-2 years';
+    if (low <= 5) return '3-5 years';
+    if (low <= 9) return '6-9 years';
+    return '10+ years';
+  }
+
+  return '';
+}
+
+function inferEmploymentType(title, text) {
+  const t = String(title || '').toLowerCase();
+  const d = String(text || '').toLowerCase();
+
+  if (/\bintern(ship)?s?\b/.test(t) || /\binternship\b/.test(d)) {
+    return 'Internship';
+  }
+
+  if (/part[\s-]?time/.test(t + ' ' + d)) return 'Part-time';
+
+  if (
+    /\b(contract|contractual|freelance|fixed[\s-]term)\s+(basis|position|role|job|employment|opportunity)/.test(d) ||
+    /contract[\s-]to[\s-]hire|\bcontractor\b/.test(t + ' ' + d)
+  ) {
+    return 'Contract';
+  }
+
+  if (/full[\s-]?time/.test(t + ' ' + d)) return 'Full-time';
+
+  return '';
+}
+
+/*
+  ============================================================
   NORMALIZATION
   ============================================================
 */
 
 function normalizeJob(raw) {
   if (!raw || typeof raw !== 'object') return null;
-
-  const source = String(
-    raw.source ||
-    raw.Source ||
-    'Unknown'
-  ).trim();
 
   const title = String(
     raw.title ||
@@ -259,37 +405,58 @@ function normalizeJob(raw) {
 
   const skills = arr(
     raw.skills ||
-    raw.skill
+    raw.skill ||
+    raw.tagsAndSkills
   );
-
-  const experience =
-    raw.experience ||
-    raw.experienceText ||
-    raw.experience_text ||
-    '';
-
-  const employmentType =
-    raw.employment_type ||
-    raw.employmentType ||
-    raw.jobType ||
-    raw.job_type ||
-    '';
-
-  const postedAt =
-    raw.posted_at ||
-    raw.postedDate ||
-    raw.posted_date ||
-    raw.created ||
-    '';
 
   const url =
     raw.original_url ||
     raw.originalUrl ||
     raw.jobUrl ||
     raw.job_url ||
+    raw.jdURL ||
     raw.redirect_url ||
     raw.redirectUrl ||
     '#';
+
+  const source = canonicalSource(
+    raw.source || raw.Source,
+    url
+  );
+
+  /*
+    Use the value from the source when present, otherwise
+    derive it from the job text so the filters have options.
+  */
+  const experience =
+    String(
+      raw.experience ||
+      raw.experienceText ||
+      raw.experience_text ||
+      ''
+    ).trim() ||
+    inferExperience(`${title} ${description}`);
+
+  const employmentType =
+    String(
+      raw.employment_type ||
+      raw.employmentType ||
+      raw.jobType ||
+      raw.job_type ||
+      ''
+    ).trim() ||
+    inferEmploymentType(title, description);
+
+  const postedDate = parseDate(
+    raw.posted_at ||
+    raw.postedDate ||
+    raw.posted_date ||
+    raw.createdDate ||
+    raw.created ||
+    ''
+  );
+
+  const postedAt = postedDate ? postedDate.toISOString() : '';
 
   const id =
     raw.id ||
@@ -349,13 +516,18 @@ function normalizeJob(raw) {
 */
 
 function isWithinLastThreeMonths(job) {
-  if (!job.posted_at) return false;
+  /*
+    Jobs with no usable date are kept (shown as "Date not listed")
+    instead of being silently dropped.
+  */
+  if (!job.posted_at) return true;
 
   const date = new Date(job.posted_at);
 
-  if (Number.isNaN(date.getTime())) return false;
+  if (Number.isNaN(date.getTime())) return true;
 
   const now = new Date();
+  now.setDate(now.getDate() + 1); // allow timezone skew
 
   /*
     Calendar-based 3 months, rather than simply 90 days.
@@ -518,35 +690,85 @@ function unique(key) {
         .map(String)
     )
   ].sort((a, b) =>
-    a.localeCompare(b)
+    a.localeCompare(b, undefined, { numeric: true })
   );
 }
 
-function populate(id, values, allLabel) {
+/*
+  Source options = known sources + sources listed in meta +
+  sources found in the jobs, each with its job count.
+*/
+function sourceCounts() {
+  const counts = {};
+
+  KNOWN_SOURCES.forEach(name => {
+    counts[name] = 0;
+  });
+
+  Object.keys(state.meta?.sources || {}).forEach(name => {
+    counts[canonicalSource(name)] ??= 0;
+  });
+
+  state.jobs.forEach(job => {
+    counts[job.source] = (counts[job.source] || 0) + 1;
+  });
+
+  return counts;
+}
+
+function sourceOptions() {
+  const counts = sourceCounts();
+
+  return Object.keys(counts)
+    .sort((a, b) => a.localeCompare(b))
+    .map(name => ({
+      value: name,
+      label: `${name} (${counts[name]})`
+    }));
+}
+
+/*
+  values: array of strings or { value, label } objects.
+  A filter with no options is disabled instead of looking broken.
+*/
+function populate(id, values) {
   const el = $(id);
 
   if (!el) return;
 
   const current = el.value;
 
+  const items = values.map(v =>
+    typeof v === 'object' && v !== null
+      ? v
+      : { value: String(v), label: String(v) }
+  );
+
   while (el.options.length > 1) {
     el.remove(1);
   }
 
-  values.forEach(value => {
+  items.forEach(item => {
     const option = document.createElement('option');
 
-    option.value = value;
-    option.textContent = value;
+    option.value = item.value;
+    option.textContent = item.label;
 
     el.appendChild(option);
   });
 
-  if (values.includes(current)) {
+  if (items.some(item => item.value === current)) {
     el.value = current;
-  } else if (allLabel && current !== '') {
-    el.value = '';
+  } else {
+    el.selectedIndex = 0;
   }
+
+  const empty = items.length === 0;
+
+  el.disabled = empty;
+  el.title = empty
+    ? 'No values available in the current job data'
+    : '';
 }
 
 /*
@@ -669,6 +891,11 @@ function injectFilterStyles() {
       text-overflow: ellipsis;
     }
 
+    .filter-controls select:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 1250px) {
       .filter-controls {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -752,7 +979,7 @@ function renderFilters() {
   if (source) {
     populate(
       'source',
-      unique('source')
+      sourceOptions()
     );
   }
 
@@ -952,7 +1179,7 @@ function card(job, index) {
     job.experience || '';
 
   const type =
-    job.employment_type || 'Full-time';
+    job.employment_type || 'Type not listed';
 
   const location =
     job.location || 'Location not listed';
@@ -1132,18 +1359,10 @@ function formatPosted(value) {
 function renderStats() {
   const meta = state.meta;
 
-  const sources = {};
-
-  state.jobs.forEach(job => {
-    const source =
-      job.source || 'Unknown';
-
-    sources[source] =
-      (sources[source] || 0) + 1;
-  });
+  const sources = sourceCounts();
 
   const sourceNames =
-    Object.keys(sources);
+    Object.keys(sources).sort((a, b) => a.localeCompare(b));
 
   const total =
     state.jobs.length;
@@ -1186,6 +1405,21 @@ function renderStats() {
         ? sourceNames.join(' + ')
         : 'No source'
     );
+
+  /*
+    A source that returned 0 jobs is flagged instead of "Enabled".
+  */
+  const emptySources = (
+    selectedSource ? [selectedSource] : sourceNames
+  ).filter(name => !sources[name]);
+
+  const statusText = emptySources.length
+    ? `${emptySources.join(', ')}: no jobs`
+    : 'Enabled';
+
+  const statusStyle = emptySources.length
+    ? ' style="background:#fff4e5;color:#b45309"'
+    : '';
 
   const cards = [
     [
@@ -1252,8 +1486,8 @@ function renderStats() {
 
                   ${escapeHtml(card[2])}
 
-                  <span class="enabled">
-                    Enabled
+                  <span class="enabled"${statusStyle}>
+                    ${escapeHtml(statusText)}
                   </span>
                 </div>
 
