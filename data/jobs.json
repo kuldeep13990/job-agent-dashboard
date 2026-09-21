@@ -569,8 +569,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-11T17:13:14Z",
-      "original_url": "https://www.adzuna.in/land/ad/5879663993?se=5rX_zyy18RGuT9hueDNTrw&utm_medium=api&utm_source=f956dbd6&v=30543A0B2C0CAFDBC89DF02ACF47ABE9C51E1A36",
-      "redirect_url": "https://www.adzuna.in/land/ad/5879663993?se=5rX_zyy18RGuT9hueDNTrw&utm_medium=api&utm_source=f956dbd6&v=30543A0B2C0CAFDBC89DF02ACF47ABE9C51E1A36"
+      "original_url": "https://www.adzuna.in/land/ad/5879663993?se=pFSfUF-18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=30543A0B2C0CAFDBC89DF02ACF47ABE9C51E1A36",
+      "redirect_url": "https://www.adzuna.in/land/ad/5879663993?se=pFSfUF-18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=30543A0B2C0CAFDBC89DF02ACF47ABE9C51E1A36"
     },
     {
       "source": "Adzuna",
@@ -1687,8 +1687,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-06T18:33:40Z",
-      "original_url": "https://www.adzuna.in/land/ad/5873073695?se=5rX_zyy18RGuT9hueDNTrw&utm_medium=api&utm_source=f956dbd6&v=BA4D373098EE1EEE70C6C614C9243A3F11DA27CA",
-      "redirect_url": "https://www.adzuna.in/land/ad/5873073695?se=5rX_zyy18RGuT9hueDNTrw&utm_medium=api&utm_source=f956dbd6&v=BA4D373098EE1EEE70C6C614C9243A3F11DA27CA"
+      "original_url": "https://www.adzuna.in/land/ad/5873073695?se=pFSfUF-18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=BA4D373098EE1EEE70C6C614C9243A3F11DA27CA",
+      "redirect_url": "https://www.adzuna.in/land/ad/5873073695?se=pFSfUF-18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=BA4D373098EE1EEE70C6C614C9243A3F11DA27CA"
     },
     {
       "source": "Adzuna",
@@ -1817,8 +1817,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-03T04:28:51Z",
-      "original_url": "https://www.adzuna.in/land/ad/5867717243?se=5rX_zyy18RGuT9hueDNTrw&utm_medium=api&utm_source=f956dbd6&v=35EAD1E48BCF94B1D4A5A381607921FFF830CAE6",
-      "redirect_url": "https://www.adzuna.in/land/ad/5867717243?se=5rX_zyy18RGuT9hueDNTrw&utm_medium=api&utm_source=f956dbd6&v=35EAD1E48BCF94B1D4A5A381607921FFF830CAE6"
+      "original_url": "https://www.adzuna.in/land/ad/5867717243?se=pFSfUF-18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=35EAD1E48BCF94B1D4A5A381607921FFF830CAE6",
+      "redirect_url": "https://www.adzuna.in/land/ad/5867717243?se=pFSfUF-18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=35EAD1E48BCF94B1D4A5A381607921FFF830CAE6"
     },
     {
       "source": "Adzuna",
@@ -5228,32 +5228,6 @@
     },
     {
       "source": "Adzuna",
-      "id": "5812365582",
-      "job_id": "5812365582",
-      "title": "Senior Full Stack Developer Superstar",
-      "company": "eatOS POS Inc.",
-      "company_name": "eatOS POS Inc.",
-      "company_url": "",
-      "company_logo": "",
-      "location": "Kakrola, South West Delhi",
-      "work_mode": "",
-      "experience": "",
-      "experience_min": null,
-      "experience_max": null,
-      "salary": "6000",
-      "salary_min": 6000,
-      "salary_max": 1080000,
-      "salary_currency": "INR",
-      "skills": [],
-      "description": "JOB DESCRIPTION: Senior Full Stack Developer (AI-Integrated Applications). WHO WE ARE: At eigital, we drive progress by enabling global organisations to stay ahead in an ever-changing technological, societal, and cultural landscape. We are dedicated to reimagining impact and shaping the future with software of tomorrow. WHAT WE ARE LOOKING FOR: We are seeking an experienced and highly skilled Full Stack Developer to design, develop, and deploy modern web and mobile applications with integrated …",
-      "employment_type": "",
-      "category": "IT Jobs",
-      "posted_at": "2026-07-23T19:11:57Z",
-      "original_url": "https://www.adzuna.in/details/5812365582?utm_medium=api&utm_source=f956dbd6",
-      "redirect_url": "https://www.adzuna.in/details/5812365582?utm_medium=api&utm_source=f956dbd6"
-    },
-    {
-      "source": "Adzuna",
       "id": "3262153952",
       "job_id": "3262153952",
       "title": "Tech Lead",
@@ -5277,6 +5251,32 @@
       "posted_at": "2022-06-26T06:20:44Z",
       "original_url": "https://www.adzuna.in/details/3262153952?utm_medium=api&utm_source=f956dbd6",
       "redirect_url": "https://www.adzuna.in/details/3262153952?utm_medium=api&utm_source=f956dbd6"
+    },
+    {
+      "source": "Adzuna",
+      "id": "5812365582",
+      "job_id": "5812365582",
+      "title": "Senior Full Stack Developer Superstar",
+      "company": "eatOS POS Inc.",
+      "company_name": "eatOS POS Inc.",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Kakrola, South West Delhi",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "6000",
+      "salary_min": 6000,
+      "salary_max": 1080000,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "JOB DESCRIPTION: Senior Full Stack Developer (AI-Integrated Applications). WHO WE ARE: At eigital, we drive progress by enabling global organisations to stay ahead in an ever-changing technological, societal, and cultural landscape. We are dedicated to reimagining impact and shaping the future with software of tomorrow. WHAT WE ARE LOOKING FOR: We are seeking an experienced and highly skilled Full Stack Developer to design, develop, and deploy modern web and mobile applications with integrated …",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2026-07-23T19:11:57Z",
+      "original_url": "https://www.adzuna.in/details/5812365582?utm_medium=api&utm_source=f956dbd6",
+      "redirect_url": "https://www.adzuna.in/details/5812365582?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -9981,8 +9981,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-04T22:30:50Z",
-      "original_url": "https://www.adzuna.in/land/ad/5870866744?se=Ltp41iy18RGWeqJL5UhOug&utm_medium=api&utm_source=f956dbd6&v=60699FEECDC66909B6B9EC17A9E59CE2E049E03D",
-      "redirect_url": "https://www.adzuna.in/land/ad/5870866744?se=Ltp41iy18RGWeqJL5UhOug&utm_medium=api&utm_source=f956dbd6&v=60699FEECDC66909B6B9EC17A9E59CE2E049E03D"
+      "original_url": "https://www.adzuna.in/land/ad/5870866744?se=3pFyVl-18RGWeqJL5UhOug&utm_medium=api&utm_source=f956dbd6&v=60699FEECDC66909B6B9EC17A9E59CE2E049E03D",
+      "redirect_url": "https://www.adzuna.in/land/ad/5870866744?se=3pFyVl-18RGWeqJL5UhOug&utm_medium=api&utm_source=f956dbd6&v=60699FEECDC66909B6B9EC17A9E59CE2E049E03D"
     },
     {
       "source": "Adzuna",
@@ -11177,8 +11177,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-09T14:45:55Z",
-      "original_url": "https://www.adzuna.in/land/ad/5876872265?se=qLRB1yy18RGSI57gYuD12g&utm_medium=api&utm_source=f956dbd6&v=A8346B994C3A9DE61AA6725E9039236F3EA8684F",
-      "redirect_url": "https://www.adzuna.in/land/ad/5876872265?se=qLRB1yy18RGSI57gYuD12g&utm_medium=api&utm_source=f956dbd6&v=A8346B994C3A9DE61AA6725E9039236F3EA8684F"
+      "original_url": "https://www.adzuna.in/land/ad/5876872265?se=Rk0SV1-18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=A8346B994C3A9DE61AA6725E9039236F3EA8684F",
+      "redirect_url": "https://www.adzuna.in/land/ad/5876872265?se=Rk0SV1-18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=A8346B994C3A9DE61AA6725E9039236F3EA8684F"
     },
     {
       "source": "Adzuna",
@@ -16481,8 +16481,8 @@
       "employment_type": "",
       "category": "Sales Jobs",
       "posted_at": "2026-09-05T18:28:58Z",
-      "original_url": "https://www.adzuna.in/land/ad/5871991248?se=mhWu2yy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=148339F9BFEED918952AC83E1A96A641053CE974",
-      "redirect_url": "https://www.adzuna.in/land/ad/5871991248?se=mhWu2yy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=148339F9BFEED918952AC83E1A96A641053CE974"
+      "original_url": "https://www.adzuna.in/land/ad/5871991248?se=cGvBWl-18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=148339F9BFEED918952AC83E1A96A641053CE974",
+      "redirect_url": "https://www.adzuna.in/land/ad/5871991248?se=cGvBWl-18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=148339F9BFEED918952AC83E1A96A641053CE974"
     },
     {
       "source": "Adzuna",
@@ -17781,8 +17781,8 @@
       "employment_type": "",
       "category": "Admin Jobs",
       "posted_at": "2026-09-19T17:31:52Z",
-      "original_url": "https://www.adzuna.in/land/ad/5890611788?se=kBpY3Cy18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=E2C2E090F0D8EE3543D1B59EF5685F400B942D22",
-      "redirect_url": "https://www.adzuna.in/land/ad/5890611788?se=kBpY3Cy18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=E2C2E090F0D8EE3543D1B59EF5685F400B942D22"
+      "original_url": "https://www.adzuna.in/land/ad/5890611788?se=FiZMW1-18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=E2C2E090F0D8EE3543D1B59EF5685F400B942D22",
+      "redirect_url": "https://www.adzuna.in/land/ad/5890611788?se=FiZMW1-18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=E2C2E090F0D8EE3543D1B59EF5685F400B942D22"
     },
     {
       "source": "Adzuna",
@@ -17859,8 +17859,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-14T01:12:30Z",
-      "original_url": "https://www.adzuna.in/land/ad/5882862058?se=kBpY3Cy18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=18D3059DDFF182AC394F12DAA2A04AEF164E8978",
-      "redirect_url": "https://www.adzuna.in/land/ad/5882862058?se=kBpY3Cy18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=18D3059DDFF182AC394F12DAA2A04AEF164E8978"
+      "original_url": "https://www.adzuna.in/land/ad/5882862058?se=FiZMW1-18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=18D3059DDFF182AC394F12DAA2A04AEF164E8978",
+      "redirect_url": "https://www.adzuna.in/land/ad/5882862058?se=FiZMW1-18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=18D3059DDFF182AC394F12DAA2A04AEF164E8978"
     },
     {
       "source": "Adzuna",
@@ -17911,8 +17911,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-13T04:23:53Z",
-      "original_url": "https://www.adzuna.in/land/ad/5881876776?se=kBpY3Cy18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=D9991AB540E69754020639FA94FA13B93B7A7FB9",
-      "redirect_url": "https://www.adzuna.in/land/ad/5881876776?se=kBpY3Cy18RGk6dCvHcHp9g&utm_medium=api&utm_source=f956dbd6&v=D9991AB540E69754020639FA94FA13B93B7A7FB9"
+      "original_url": "https://www.adzuna.in/land/ad/5881876776?se=FiZMW1-18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=D9991AB540E69754020639FA94FA13B93B7A7FB9",
+      "redirect_url": "https://www.adzuna.in/land/ad/5881876776?se=FiZMW1-18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=D9991AB540E69754020639FA94FA13B93B7A7FB9"
     },
     {
       "source": "Adzuna",
@@ -18613,8 +18613,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-03T04:37:10Z",
-      "original_url": "https://www.adzuna.in/land/ad/5867727283?se=YLFA3Sy18RGuT9hueDNTrw&utm_medium=api&utm_source=f956dbd6&v=1CBAD2F0089341E4F1569E830BA1967E2D372AB2",
-      "redirect_url": "https://www.adzuna.in/land/ad/5867727283?se=YLFA3Sy18RGuT9hueDNTrw&utm_medium=api&utm_source=f956dbd6&v=1CBAD2F0089341E4F1569E830BA1967E2D372AB2"
+      "original_url": "https://www.adzuna.in/land/ad/5867727283?se=rKgtXF-18RGSI57gYuD12g&utm_medium=api&utm_source=f956dbd6&v=1CBAD2F0089341E4F1569E830BA1967E2D372AB2",
+      "redirect_url": "https://www.adzuna.in/land/ad/5867727283?se=rKgtXF-18RGSI57gYuD12g&utm_medium=api&utm_source=f956dbd6&v=1CBAD2F0089341E4F1569E830BA1967E2D372AB2"
     },
     {
       "source": "Adzuna",
@@ -19601,8 +19601,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-08T18:42:12Z",
-      "original_url": "https://www.adzuna.in/land/ad/5875602766?se=FsUM3iy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=6DEDD2BAE7DB2461C3B4207FE4FB408EADEB4AC2",
-      "redirect_url": "https://www.adzuna.in/land/ad/5875602766?se=FsUM3iy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=6DEDD2BAE7DB2461C3B4207FE4FB408EADEB4AC2"
+      "original_url": "https://www.adzuna.in/land/ad/5875602766?se=7IwIXV-18RGTKupd6C_-Ew&utm_medium=api&utm_source=f956dbd6&v=6DEDD2BAE7DB2461C3B4207FE4FB408EADEB4AC2",
+      "redirect_url": "https://www.adzuna.in/land/ad/5875602766?se=7IwIXV-18RGTKupd6C_-Ew&utm_medium=api&utm_source=f956dbd6&v=6DEDD2BAE7DB2461C3B4207FE4FB408EADEB4AC2"
     },
     {
       "source": "Adzuna",
@@ -19653,8 +19653,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-08-12T01:59:37Z",
-      "original_url": "https://www.adzuna.in/land/ad/5837139469?se=FsUM3iy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=16DC1893C3026AA51441662E0B1A61360470917B",
-      "redirect_url": "https://www.adzuna.in/land/ad/5837139469?se=FsUM3iy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=16DC1893C3026AA51441662E0B1A61360470917B"
+      "original_url": "https://www.adzuna.in/land/ad/5837139469?se=7IwIXV-18RGTKupd6C_-Ew&utm_medium=api&utm_source=f956dbd6&v=16DC1893C3026AA51441662E0B1A61360470917B",
+      "redirect_url": "https://www.adzuna.in/land/ad/5837139469?se=7IwIXV-18RGTKupd6C_-Ew&utm_medium=api&utm_source=f956dbd6&v=16DC1893C3026AA51441662E0B1A61360470917B"
     },
     {
       "source": "Adzuna",
@@ -20121,8 +20121,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-06T18:33:35Z",
-      "original_url": "https://www.adzuna.in/land/ad/5873073655?se=FsUM3iy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=8CF7AC4AA6297279C7276C65DFCD4B66C8E0F629",
-      "redirect_url": "https://www.adzuna.in/land/ad/5873073655?se=FsUM3iy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=8CF7AC4AA6297279C7276C65DFCD4B66C8E0F629"
+      "original_url": "https://www.adzuna.in/land/ad/5873073655?se=7IwIXV-18RGTKupd6C_-Ew&utm_medium=api&utm_source=f956dbd6&v=8CF7AC4AA6297279C7276C65DFCD4B66C8E0F629",
+      "redirect_url": "https://www.adzuna.in/land/ad/5873073655?se=7IwIXV-18RGTKupd6C_-Ew&utm_medium=api&utm_source=f956dbd6&v=8CF7AC4AA6297279C7276C65DFCD4B66C8E0F629"
     },
     {
       "source": "Adzuna",
@@ -23007,8 +23007,8 @@
       "employment_type": "",
       "category": "Sales Jobs",
       "posted_at": "2026-07-24T19:00:30Z",
-      "original_url": "https://www.adzuna.in/land/ad/5813877410?se=yhkk4Sy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=5ABD9C366C2EE1C22239E8138769D77CBAC67720",
-      "redirect_url": "https://www.adzuna.in/land/ad/5813877410?se=yhkk4Sy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=5ABD9C366C2EE1C22239E8138769D77CBAC67720"
+      "original_url": "https://www.adzuna.in/land/ad/5813877410?se=GHFBX1-18RGbrONHLimZZQ&utm_medium=api&utm_source=f956dbd6&v=5ABD9C366C2EE1C22239E8138769D77CBAC67720",
+      "redirect_url": "https://www.adzuna.in/land/ad/5813877410?se=GHFBX1-18RGbrONHLimZZQ&utm_medium=api&utm_source=f956dbd6&v=5ABD9C366C2EE1C22239E8138769D77CBAC67720"
     },
     {
       "source": "Adzuna",
@@ -23033,8 +23033,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-12T17:21:16Z",
-      "original_url": "https://www.adzuna.in/land/ad/5880953332?se=yhkk4Sy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=FF039A21160593C86C0FCFD93A7FB0509A836A68",
-      "redirect_url": "https://www.adzuna.in/land/ad/5880953332?se=yhkk4Sy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=FF039A21160593C86C0FCFD93A7FB0509A836A68"
+      "original_url": "https://www.adzuna.in/land/ad/5880953332?se=GHFBX1-18RGbrONHLimZZQ&utm_medium=api&utm_source=f956dbd6&v=FF039A21160593C86C0FCFD93A7FB0509A836A68",
+      "redirect_url": "https://www.adzuna.in/land/ad/5880953332?se=GHFBX1-18RGbrONHLimZZQ&utm_medium=api&utm_source=f956dbd6&v=FF039A21160593C86C0FCFD93A7FB0509A836A68"
     },
     {
       "source": "Adzuna",
@@ -24177,8 +24177,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-08-29T00:04:45Z",
-      "original_url": "https://www.adzuna.in/land/ad/5859991622?se=PlP94Sy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=CE774EEAE649A4BE20CCFD242573385700A749E0",
-      "redirect_url": "https://www.adzuna.in/land/ad/5859991622?se=PlP94Sy18RGm1alvctyjWA&utm_medium=api&utm_source=f956dbd6&v=CE774EEAE649A4BE20CCFD242573385700A749E0"
+      "original_url": "https://www.adzuna.in/land/ad/5859991622?se=dDmuX1-18RGbrONHLimZZQ&utm_medium=api&utm_source=f956dbd6&v=CE774EEAE649A4BE20CCFD242573385700A749E0",
+      "redirect_url": "https://www.adzuna.in/land/ad/5859991622?se=dDmuX1-18RGbrONHLimZZQ&utm_medium=api&utm_source=f956dbd6&v=CE774EEAE649A4BE20CCFD242573385700A749E0"
     },
     {
       "source": "Adzuna",
@@ -24756,10 +24756,10 @@
   "meta": {
     "collected_jobs": 1066,
     "unique_jobs": 952,
-    "new_jobs": 11,
+    "new_jobs": 0,
     "saved_matches": 952,
-    "last_run_utc": "2026-09-20T19:53:00.996914+00:00",
-    "updated_at": "2026-09-20T19:53:00.996914+00:00",
+    "last_run_utc": "2026-09-21T01:54:26.427488+00:00",
+    "updated_at": "2026-09-21T01:54:26.427488+00:00",
     "sources": {
       "Naukri": 0,
       "Adzuna": 1066
