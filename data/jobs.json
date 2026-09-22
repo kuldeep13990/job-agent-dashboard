@@ -543,8 +543,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-11T17:13:14Z",
-      "original_url": "https://www.adzuna.in/land/ad/5879663993?se=iM5Phim28RGzvZ_vy4M_ag&utm_medium=api&utm_source=f956dbd6&v=30543A0B2C0CAFDBC89DF02ACF47ABE9C51E1A36",
-      "redirect_url": "https://www.adzuna.in/land/ad/5879663993?se=iM5Phim28RGzvZ_vy4M_ag&utm_medium=api&utm_source=f956dbd6&v=30543A0B2C0CAFDBC89DF02ACF47ABE9C51E1A36"
+      "original_url": "https://www.adzuna.in/land/ad/5879663993?se=7iFC-G-28RG_ufLnE1x16Q&utm_medium=api&utm_source=f956dbd6&v=30543A0B2C0CAFDBC89DF02ACF47ABE9C51E1A36",
+      "redirect_url": "https://www.adzuna.in/land/ad/5879663993?se=7iFC-G-28RG_ufLnE1x16Q&utm_medium=api&utm_source=f956dbd6&v=30543A0B2C0CAFDBC89DF02ACF47ABE9C51E1A36"
     },
     {
       "source": "Adzuna",
@@ -569,8 +569,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-16T17:30:09Z",
-      "original_url": "https://www.adzuna.in/land/ad/5886096999?se=iM5Phim28RGzvZ_vy4M_ag&utm_medium=api&utm_source=f956dbd6&v=C349EF6EC84760F2B71FCEB9639E5416EA6FAB6B",
-      "redirect_url": "https://www.adzuna.in/land/ad/5886096999?se=iM5Phim28RGzvZ_vy4M_ag&utm_medium=api&utm_source=f956dbd6&v=C349EF6EC84760F2B71FCEB9639E5416EA6FAB6B"
+      "original_url": "https://www.adzuna.in/land/ad/5886096999?se=7iFC-G-28RG_ufLnE1x16Q&utm_medium=api&utm_source=f956dbd6&v=C349EF6EC84760F2B71FCEB9639E5416EA6FAB6B",
+      "redirect_url": "https://www.adzuna.in/land/ad/5886096999?se=7iFC-G-28RG_ufLnE1x16Q&utm_medium=api&utm_source=f956dbd6&v=C349EF6EC84760F2B71FCEB9639E5416EA6FAB6B"
     },
     {
       "source": "Adzuna",
@@ -623,6 +623,32 @@
       "posted_at": "2026-03-20T11:24:20Z",
       "original_url": "https://www.adzuna.in/details/5672787189?utm_medium=api&utm_source=f956dbd6",
       "redirect_url": "https://www.adzuna.in/details/5672787189?utm_medium=api&utm_source=f956dbd6"
+    },
+    {
+      "source": "Adzuna",
+      "id": "5727273035",
+      "job_id": "5727273035",
+      "title": "Flutter Developer",
+      "company": "RECEX",
+      "company_name": "RECEX",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Bangalore, Karnataka",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "600000",
+      "salary_min": 600000,
+      "salary_max": 600000,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "Job Description: Flutter Developer As a Flutter Developer, you will oversee reviewing the software specifications and UI mockups, developing a cross-browser mobile application from scratch, and leading the application testing effort. You'll work alongside a backend developer, as well as a UI designer to ensure you create high-performing applications with a smooth user experience. Roles and Responsibilities • Designing, developing, testing, maintaining, and deploying software in the Flutter  fr…",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2026-05-13T02:17:21Z",
+      "original_url": "https://www.adzuna.in/details/5727273035?utm_medium=api&utm_source=f956dbd6",
+      "redirect_url": "https://www.adzuna.in/details/5727273035?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -1687,8 +1713,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-06T18:33:40Z",
-      "original_url": "https://www.adzuna.in/land/ad/5873073695?se=iM5Phim28RGzvZ_vy4M_ag&utm_medium=api&utm_source=f956dbd6&v=BA4D373098EE1EEE70C6C614C9243A3F11DA27CA",
-      "redirect_url": "https://www.adzuna.in/land/ad/5873073695?se=iM5Phim28RGzvZ_vy4M_ag&utm_medium=api&utm_source=f956dbd6&v=BA4D373098EE1EEE70C6C614C9243A3F11DA27CA"
+      "original_url": "https://www.adzuna.in/land/ad/5873073695?se=7iFC-G-28RG_ufLnE1x16Q&utm_medium=api&utm_source=f956dbd6&v=BA4D373098EE1EEE70C6C614C9243A3F11DA27CA",
+      "redirect_url": "https://www.adzuna.in/land/ad/5873073695?se=7iFC-G-28RG_ufLnE1x16Q&utm_medium=api&utm_source=f956dbd6&v=BA4D373098EE1EEE70C6C614C9243A3F11DA27CA"
     },
     {
       "source": "Adzuna",
@@ -1793,32 +1819,6 @@
       "posted_at": "2026-02-07T11:42:31Z",
       "original_url": "https://www.adzuna.in/details/5618649680?utm_medium=api&utm_source=f956dbd6",
       "redirect_url": "https://www.adzuna.in/details/5618649680?utm_medium=api&utm_source=f956dbd6"
-    },
-    {
-      "source": "Adzuna",
-      "id": "5219245317",
-      "job_id": "5219245317",
-      "title": "Flutter Dart Developer",
-      "company": "NeoGenCode Technologies Pvt Ltd",
-      "company_name": "NeoGenCode Technologies Pvt Ltd",
-      "company_url": "",
-      "company_logo": "",
-      "location": "Bangalore, Karnataka",
-      "work_mode": "",
-      "experience": "",
-      "experience_min": null,
-      "experience_max": null,
-      "salary": "500000",
-      "salary_min": 500000,
-      "salary_max": 1200000,
-      "salary_currency": "INR",
-      "skills": [],
-      "description": "Position : Flutter Dart Developer Experience Required : 5 Years Location : Bellandur & Manthali, Bangalore – Onsite Only Employment Type : Contractual Job Summary : We are looking for an experienced Flutter Developer with 5 years of experience in mobile application development and at least 3 years of hands-on expertise in Flutter & Dart . The ideal candidate should have a strong grasp of cross-platform mobile development, a passion for clean code, and the ability to build robust, high-performan…",
-      "employment_type": "",
-      "category": "IT Jobs",
-      "posted_at": "2025-05-28T04:59:39Z",
-      "original_url": "https://www.adzuna.in/details/5219245317?utm_medium=api&utm_source=f956dbd6",
-      "redirect_url": "https://www.adzuna.in/details/5219245317?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -3169,8 +3169,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-20T17:31:28Z",
-      "original_url": "https://www.adzuna.in/land/ad/5891689502?se=WMSKiim28RGlc7HoyagPxA&utm_medium=api&utm_source=f956dbd6&v=BAB030DAFDEC8EC68E1AE6C34E6DBC902CB626E3",
-      "redirect_url": "https://www.adzuna.in/land/ad/5891689502?se=WMSKiim28RGlc7HoyagPxA&utm_medium=api&utm_source=f956dbd6&v=BAB030DAFDEC8EC68E1AE6C34E6DBC902CB626E3"
+      "original_url": "https://www.adzuna.in/land/ad/5891689502?se=_nKA-W-28RGQ6bd1aIUiaw&utm_medium=api&utm_source=f956dbd6&v=BAB030DAFDEC8EC68E1AE6C34E6DBC902CB626E3",
+      "redirect_url": "https://www.adzuna.in/land/ad/5891689502?se=_nKA-W-28RGQ6bd1aIUiaw&utm_medium=api&utm_source=f956dbd6&v=BAB030DAFDEC8EC68E1AE6C34E6DBC902CB626E3"
     },
     {
       "source": "Adzuna",
@@ -5176,32 +5176,6 @@
     },
     {
       "source": "Adzuna",
-      "id": "5812365582",
-      "job_id": "5812365582",
-      "title": "Senior Full Stack Developer Superstar",
-      "company": "eatOS POS Inc.",
-      "company_name": "eatOS POS Inc.",
-      "company_url": "",
-      "company_logo": "",
-      "location": "Kakrola, South West Delhi",
-      "work_mode": "",
-      "experience": "",
-      "experience_min": null,
-      "experience_max": null,
-      "salary": "6000",
-      "salary_min": 6000,
-      "salary_max": 1080000,
-      "salary_currency": "INR",
-      "skills": [],
-      "description": "JOB DESCRIPTION: Senior Full Stack Developer (AI-Integrated Applications). WHO WE ARE: At eigital, we drive progress by enabling global organisations to stay ahead in an ever-changing technological, societal, and cultural landscape. We are dedicated to reimagining impact and shaping the future with software of tomorrow. WHAT WE ARE LOOKING FOR: We are seeking an experienced and highly skilled Full Stack Developer to design, develop, and deploy modern web and mobile applications with integrated …",
-      "employment_type": "",
-      "category": "IT Jobs",
-      "posted_at": "2026-07-23T19:11:57Z",
-      "original_url": "https://www.adzuna.in/details/5812365582?utm_medium=api&utm_source=f956dbd6",
-      "redirect_url": "https://www.adzuna.in/details/5812365582?utm_medium=api&utm_source=f956dbd6"
-    },
-    {
-      "source": "Adzuna",
       "id": "3262153952",
       "job_id": "3262153952",
       "title": "Tech Lead",
@@ -5225,6 +5199,32 @@
       "posted_at": "2022-06-26T06:20:44Z",
       "original_url": "https://www.adzuna.in/details/3262153952?utm_medium=api&utm_source=f956dbd6",
       "redirect_url": "https://www.adzuna.in/details/3262153952?utm_medium=api&utm_source=f956dbd6"
+    },
+    {
+      "source": "Adzuna",
+      "id": "5812365582",
+      "job_id": "5812365582",
+      "title": "Senior Full Stack Developer Superstar",
+      "company": "eatOS POS Inc.",
+      "company_name": "eatOS POS Inc.",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Kakrola, South West Delhi",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "6000",
+      "salary_min": 6000,
+      "salary_max": 1080000,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "JOB DESCRIPTION: Senior Full Stack Developer (AI-Integrated Applications). WHO WE ARE: At eigital, we drive progress by enabling global organisations to stay ahead in an ever-changing technological, societal, and cultural landscape. We are dedicated to reimagining impact and shaping the future with software of tomorrow. WHAT WE ARE LOOKING FOR: We are seeking an experienced and highly skilled Full Stack Developer to design, develop, and deploy modern web and mobile applications with integrated …",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2026-07-23T19:11:57Z",
+      "original_url": "https://www.adzuna.in/details/5812365582?utm_medium=api&utm_source=f956dbd6",
+      "redirect_url": "https://www.adzuna.in/details/5812365582?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -9929,8 +9929,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-04T22:30:50Z",
-      "original_url": "https://www.adzuna.in/land/ad/5870866744?se=BHg0lSm28RGzY84OElSqtQ&utm_medium=api&utm_source=f956dbd6&v=60699FEECDC66909B6B9EC17A9E59CE2E049E03D",
-      "redirect_url": "https://www.adzuna.in/land/ad/5870866744?se=BHg0lSm28RGzY84OElSqtQ&utm_medium=api&utm_source=f956dbd6&v=60699FEECDC66909B6B9EC17A9E59CE2E049E03D"
+      "original_url": "https://www.adzuna.in/land/ad/5870866744?se=bMH8_G-28RGVZJdJjupeeg&utm_medium=api&utm_source=f956dbd6&v=60699FEECDC66909B6B9EC17A9E59CE2E049E03D",
+      "redirect_url": "https://www.adzuna.in/land/ad/5870866744?se=bMH8_G-28RGVZJdJjupeeg&utm_medium=api&utm_source=f956dbd6&v=60699FEECDC66909B6B9EC17A9E59CE2E049E03D"
     },
     {
       "source": "Adzuna",
@@ -11125,8 +11125,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-09T14:45:55Z",
-      "original_url": "https://www.adzuna.in/land/ad/5876872265?se=oJmOlim28RG8y8PiQeA5bQ&utm_medium=api&utm_source=f956dbd6&v=A8346B994C3A9DE61AA6725E9039236F3EA8684F",
-      "redirect_url": "https://www.adzuna.in/land/ad/5876872265?se=oJmOlim28RG8y8PiQeA5bQ&utm_medium=api&utm_source=f956dbd6&v=A8346B994C3A9DE61AA6725E9039236F3EA8684F"
+      "original_url": "https://www.adzuna.in/land/ad/5876872265?se=qCJz_W-28RG7t6kfOdp34w&utm_medium=api&utm_source=f956dbd6&v=A8346B994C3A9DE61AA6725E9039236F3EA8684F",
+      "redirect_url": "https://www.adzuna.in/land/ad/5876872265?se=qCJz_W-28RG7t6kfOdp34w&utm_medium=api&utm_source=f956dbd6&v=A8346B994C3A9DE61AA6725E9039236F3EA8684F"
     },
     {
       "source": "Adzuna",
@@ -11884,6 +11884,32 @@
     },
     {
       "source": "Adzuna",
+      "id": "5893005536",
+      "job_id": "5893005536",
+      "title": "iOS Developer",
+      "company": "e-Hireo",
+      "company_name": "e-Hireo",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Mumbai, Maharashtra",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "",
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "JOB DESCRIPTION Experience : 4 - 7 Yrs Location : Mumbai (Andheri East) Designation : Software Development Engineer - iOS Job Responsibilities : Owing to end to end responsibility of the App design & development, deployment and monitoring phases Writing reusable, testable and extensible code Help maintain code quality, organization, and automatization Collaborate with team members to define, design, and ship new features Ensure top-notch performance, quality, and responsiveness of applications …",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2026-09-21T22:32:22Z",
+      "original_url": "https://www.adzuna.in/details/5893005536?utm_medium=api&utm_source=f956dbd6",
+      "redirect_url": "https://www.adzuna.in/details/5893005536?utm_medium=api&utm_source=f956dbd6"
+    },
+    {
+      "source": "Adzuna",
       "id": "2427499846",
       "job_id": "2427499846",
       "title": "iOS Developer",
@@ -12378,32 +12404,6 @@
     },
     {
       "source": "Adzuna",
-      "id": "4801593031",
-      "job_id": "4801593031",
-      "title": "iOS Lead Developer",
-      "company": "Cityflo",
-      "company_name": "Cityflo",
-      "company_url": "",
-      "company_logo": "",
-      "location": "Mumbai, Maharashtra",
-      "work_mode": "",
-      "experience": "",
-      "experience_min": null,
-      "experience_max": null,
-      "salary": "",
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": "INR",
-      "skills": [],
-      "description": "As an iOS Lead, you will be leading our iOS app development that aims to help people commute better. Product is everything at Cityflo, and we are working on a genuine problem that affects millions of people in India. No solution exists today for finding an easy way to get to and from office, a problem that affects everyone twice a day. Everyday. We are looking for developers who are passionate about pushing mobile tech to the limit and are keen on taking ownership at a early stage startup that …",
-      "employment_type": "",
-      "category": "IT Jobs",
-      "posted_at": "2024-07-31T03:17:38Z",
-      "original_url": "https://www.adzuna.in/details/4801593031?utm_medium=api&utm_source=f956dbd6",
-      "redirect_url": "https://www.adzuna.in/details/4801593031?utm_medium=api&utm_source=f956dbd6"
-    },
-    {
-      "source": "Adzuna",
       "id": "2965125002",
       "job_id": "2965125002",
       "title": "iOS Developer",
@@ -12560,32 +12560,6 @@
     },
     {
       "source": "Adzuna",
-      "id": "4344577776",
-      "job_id": "4344577776",
-      "title": "iOS Developer",
-      "company": "Jobdost",
-      "company_name": "Jobdost",
-      "company_url": "",
-      "company_logo": "",
-      "location": "Delhi, India",
-      "work_mode": "",
-      "experience": "",
-      "experience_min": null,
-      "experience_max": null,
-      "salary": "200000",
-      "salary_min": 200000,
-      "salary_max": 1500000,
-      "salary_currency": "INR",
-      "skills": [],
-      "description": "IOS DEVELOPER About us: We are helping 70M Indians to prevent, manage and reverse Type 2 Diabetes. Through our clinically verified digital well-beingprogram we help people with Type 2 Diabetes to reduce blood glucose, lose weight and stop medications in a fun and engaging way. We have a coach led community first approach which we combine with game design to deliver health outcomes. Our Net Promoter Score is 80 and more than 40% of our current customers are coming from word of mouth Our Team: We…",
-      "employment_type": "",
-      "category": "IT Jobs",
-      "posted_at": "2023-10-02T13:22:25Z",
-      "original_url": "https://www.adzuna.in/details/4344577776?utm_medium=api&utm_source=f956dbd6",
-      "redirect_url": "https://www.adzuna.in/details/4344577776?utm_medium=api&utm_source=f956dbd6"
-    },
-    {
-      "source": "Adzuna",
       "id": "1565995680",
       "job_id": "1565995680",
       "title": "iOS Developer",
@@ -12609,6 +12583,32 @@
       "posted_at": "2020-06-06T20:59:20Z",
       "original_url": "https://www.adzuna.in/details/1565995680?utm_medium=api&utm_source=f956dbd6",
       "redirect_url": "https://www.adzuna.in/details/1565995680?utm_medium=api&utm_source=f956dbd6"
+    },
+    {
+      "source": "Adzuna",
+      "id": "4344577776",
+      "job_id": "4344577776",
+      "title": "iOS Developer",
+      "company": "Jobdost",
+      "company_name": "Jobdost",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Delhi, India",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "200000",
+      "salary_min": 200000,
+      "salary_max": 1500000,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "IOS DEVELOPER About us: We are helping 70M Indians to prevent, manage and reverse Type 2 Diabetes. Through our clinically verified digital well-beingprogram we help people with Type 2 Diabetes to reduce blood glucose, lose weight and stop medications in a fun and engaging way. We have a coach led community first approach which we combine with game design to deliver health outcomes. Our Net Promoter Score is 80 and more than 40% of our current customers are coming from word of mouth Our Team: We…",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2023-10-02T13:22:25Z",
+      "original_url": "https://www.adzuna.in/details/4344577776?utm_medium=api&utm_source=f956dbd6",
+      "redirect_url": "https://www.adzuna.in/details/4344577776?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -14744,6 +14744,32 @@
     },
     {
       "source": "Adzuna",
+      "id": "5892773901",
+      "job_id": "5892773901",
+      "title": "Technical Delivery Manager",
+      "company": "AppSquadz",
+      "company_name": "AppSquadz",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Noida, Ghaziabad",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "",
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "Profile: Technical Project Manager / Delivery Manager Experience 10 years Product EduCrypt — EdTech SaaS Platform Role Overview We are looking for an experienced \"Technical Project Manager / Delivery Manager\" to own end-to-end delivery for EduCrypt, our EdTech SaaS platform. The role requires someone who is equally comfortable in sprint rooms and in architecture discussions — driving planning and execution across a large, cross-functional development team while staying hands-on enough to unders…",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2026-09-21T17:40:24Z",
+      "original_url": "https://www.adzuna.in/land/ad/5892773901?se=gEzA_m-28RG6IO5SmYJ5DA&utm_medium=api&utm_source=f956dbd6&v=90FCEFEB9828F3DF2EBE701192073E9A13D03010",
+      "redirect_url": "https://www.adzuna.in/land/ad/5892773901?se=gEzA_m-28RG6IO5SmYJ5DA&utm_medium=api&utm_source=f956dbd6&v=90FCEFEB9828F3DF2EBE701192073E9A13D03010"
+    },
+    {
+      "source": "Adzuna",
       "id": "5862986553",
       "job_id": "5862986553",
       "title": "React Native Developer (Android & iOS)",
@@ -15183,32 +15209,6 @@
       "posted_at": "2022-04-01T05:20:08Z",
       "original_url": "https://www.adzuna.in/details/3013474687?utm_medium=api&utm_source=f956dbd6",
       "redirect_url": "https://www.adzuna.in/details/3013474687?utm_medium=api&utm_source=f956dbd6"
-    },
-    {
-      "source": "Adzuna",
-      "id": "2738981666",
-      "job_id": "2738981666",
-      "title": "React Native Developer",
-      "company": "Inmortal Technologies",
-      "company_name": "Inmortal Technologies",
-      "company_url": "",
-      "company_logo": "",
-      "location": "Noida, Ghaziabad",
-      "work_mode": "",
-      "experience": "",
-      "experience_min": null,
-      "experience_max": null,
-      "salary": "400000",
-      "salary_min": 400000,
-      "salary_max": 900000,
-      "salary_currency": "INR",
-      "skills": [],
-      "description": "Work as part of a small team to build React Native iOS / Android applications for FullStack's clients. Architect, build and maintain excellent React Native applications with clean code. Implement pixel perfect UI's that match designs. Implement clean, modern, smooth animations and transitions that provide an excellent user experience. Integrate third-party API's. Write unit and integration tests. Release applications to the Apple and Google Play stores. Work with native modules when required. W…",
-      "employment_type": "",
-      "category": "IT Jobs",
-      "posted_at": "2021-12-15T08:07:43Z",
-      "original_url": "https://www.adzuna.in/details/2738981666?utm_medium=api&utm_source=f956dbd6",
-      "redirect_url": "https://www.adzuna.in/details/2738981666?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -16429,8 +16429,8 @@
       "employment_type": "",
       "category": "Sales Jobs",
       "posted_at": "2026-09-05T18:28:58Z",
-      "original_url": "https://www.adzuna.in/land/ad/5871991248?se=YjC_nim28RG8y8PiQeA5bQ&utm_medium=api&utm_source=f956dbd6&v=148339F9BFEED918952AC83E1A96A641053CE974",
-      "redirect_url": "https://www.adzuna.in/land/ad/5871991248?se=YjC_nim28RG8y8PiQeA5bQ&utm_medium=api&utm_source=f956dbd6&v=148339F9BFEED918952AC83E1A96A641053CE974"
+      "original_url": "https://www.adzuna.in/land/ad/5871991248?se=8EDd_2-28RG7t6kfOdp34w&utm_medium=api&utm_source=f956dbd6&v=148339F9BFEED918952AC83E1A96A641053CE974",
+      "redirect_url": "https://www.adzuna.in/land/ad/5871991248?se=8EDd_2-28RG7t6kfOdp34w&utm_medium=api&utm_source=f956dbd6&v=148339F9BFEED918952AC83E1A96A641053CE974"
     },
     {
       "source": "Adzuna",
@@ -16481,8 +16481,8 @@
       "employment_type": "",
       "category": "Sales Jobs",
       "posted_at": "2026-09-20T17:31:26Z",
-      "original_url": "https://www.adzuna.in/land/ad/5891689483?se=YjC_nim28RG8y8PiQeA5bQ&utm_medium=api&utm_source=f956dbd6&v=03A2A1D4A861B488BC6472468229C12C363BCF6C",
-      "redirect_url": "https://www.adzuna.in/land/ad/5891689483?se=YjC_nim28RG8y8PiQeA5bQ&utm_medium=api&utm_source=f956dbd6&v=03A2A1D4A861B488BC6472468229C12C363BCF6C"
+      "original_url": "https://www.adzuna.in/land/ad/5891689483?se=8EDd_2-28RG7t6kfOdp34w&utm_medium=api&utm_source=f956dbd6&v=03A2A1D4A861B488BC6472468229C12C363BCF6C",
+      "redirect_url": "https://www.adzuna.in/land/ad/5891689483?se=8EDd_2-28RG7t6kfOdp34w&utm_medium=api&utm_source=f956dbd6&v=03A2A1D4A861B488BC6472468229C12C363BCF6C"
     },
     {
       "source": "Adzuna",
@@ -17729,8 +17729,8 @@
       "employment_type": "",
       "category": "Admin Jobs",
       "posted_at": "2026-09-19T17:31:52Z",
-      "original_url": "https://www.adzuna.in/land/ad/5890611788?se=5hLQnym28RGlc7HoyagPxA&utm_medium=api&utm_source=f956dbd6&v=E2C2E090F0D8EE3543D1B59EF5685F400B942D22",
-      "redirect_url": "https://www.adzuna.in/land/ad/5890611788?se=5hLQnym28RGlc7HoyagPxA&utm_medium=api&utm_source=f956dbd6&v=E2C2E090F0D8EE3543D1B59EF5685F400B942D22"
+      "original_url": "https://www.adzuna.in/land/ad/5890611788?se=WpVQAHC28RGQ6bd1aIUiaw&utm_medium=api&utm_source=f956dbd6&v=E2C2E090F0D8EE3543D1B59EF5685F400B942D22",
+      "redirect_url": "https://www.adzuna.in/land/ad/5890611788?se=WpVQAHC28RGQ6bd1aIUiaw&utm_medium=api&utm_source=f956dbd6&v=E2C2E090F0D8EE3543D1B59EF5685F400B942D22"
     },
     {
       "source": "Adzuna",
@@ -17807,8 +17807,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-14T01:12:30Z",
-      "original_url": "https://www.adzuna.in/land/ad/5882862058?se=5hLQnym28RGlc7HoyagPxA&utm_medium=api&utm_source=f956dbd6&v=18D3059DDFF182AC394F12DAA2A04AEF164E8978",
-      "redirect_url": "https://www.adzuna.in/land/ad/5882862058?se=5hLQnym28RGlc7HoyagPxA&utm_medium=api&utm_source=f956dbd6&v=18D3059DDFF182AC394F12DAA2A04AEF164E8978"
+      "original_url": "https://www.adzuna.in/land/ad/5882862058?se=WpVQAHC28RGQ6bd1aIUiaw&utm_medium=api&utm_source=f956dbd6&v=18D3059DDFF182AC394F12DAA2A04AEF164E8978",
+      "redirect_url": "https://www.adzuna.in/land/ad/5882862058?se=WpVQAHC28RGQ6bd1aIUiaw&utm_medium=api&utm_source=f956dbd6&v=18D3059DDFF182AC394F12DAA2A04AEF164E8978"
     },
     {
       "source": "Adzuna",
@@ -17859,8 +17859,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-13T04:23:53Z",
-      "original_url": "https://www.adzuna.in/land/ad/5881876776?se=5hLQnym28RGlc7HoyagPxA&utm_medium=api&utm_source=f956dbd6&v=D9991AB540E69754020639FA94FA13B93B7A7FB9",
-      "redirect_url": "https://www.adzuna.in/land/ad/5881876776?se=5hLQnym28RGlc7HoyagPxA&utm_medium=api&utm_source=f956dbd6&v=D9991AB540E69754020639FA94FA13B93B7A7FB9"
+      "original_url": "https://www.adzuna.in/land/ad/5881876776?se=WpVQAHC28RGQ6bd1aIUiaw&utm_medium=api&utm_source=f956dbd6&v=D9991AB540E69754020639FA94FA13B93B7A7FB9",
+      "redirect_url": "https://www.adzuna.in/land/ad/5881876776?se=WpVQAHC28RGQ6bd1aIUiaw&utm_medium=api&utm_source=f956dbd6&v=D9991AB540E69754020639FA94FA13B93B7A7FB9"
     },
     {
       "source": "Adzuna",
@@ -18095,6 +18095,32 @@
       "posted_at": "2024-01-07T15:08:12Z",
       "original_url": "https://www.adzuna.in/details/4514376769?utm_medium=api&utm_source=f956dbd6",
       "redirect_url": "https://www.adzuna.in/details/4514376769?utm_medium=api&utm_source=f956dbd6"
+    },
+    {
+      "source": "Adzuna",
+      "id": "5219245317",
+      "job_id": "5219245317",
+      "title": "Flutter Dart Developer",
+      "company": "NeoGenCode Technologies Pvt Ltd",
+      "company_name": "NeoGenCode Technologies Pvt Ltd",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Bangalore, Karnataka",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "500000",
+      "salary_min": 500000,
+      "salary_max": 1200000,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "Position : Flutter Dart Developer Experience Required : 5 Years Location : Bellandur & Manthali, Bangalore – Onsite Only Employment Type : Contractual Job Summary : We are looking for an experienced Flutter Developer with 5 years of experience in mobile application development and at least 3 years of hands-on expertise in Flutter & Dart . The ideal candidate should have a strong grasp of cross-platform mobile development, a passion for clean code, and the ability to build robust, high-performan…",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2025-05-28T04:59:39Z",
+      "original_url": "https://www.adzuna.in/details/5219245317?utm_medium=api&utm_source=f956dbd6",
+      "redirect_url": "https://www.adzuna.in/details/5219245317?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -18587,8 +18613,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-03T04:37:10Z",
-      "original_url": "https://www.adzuna.in/land/ad/5867727283?se=WL8PoSm28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=1CBAD2F0089341E4F1569E830BA1967E2D372AB2",
-      "redirect_url": "https://www.adzuna.in/land/ad/5867727283?se=WL8PoSm28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=1CBAD2F0089341E4F1569E830BA1967E2D372AB2"
+      "original_url": "https://www.adzuna.in/land/ad/5867727283?se=pKDmAHC28RGngO5vYt-GKw&utm_medium=api&utm_source=f956dbd6&v=1CBAD2F0089341E4F1569E830BA1967E2D372AB2",
+      "redirect_url": "https://www.adzuna.in/land/ad/5867727283?se=pKDmAHC28RGngO5vYt-GKw&utm_medium=api&utm_source=f956dbd6&v=1CBAD2F0089341E4F1569E830BA1967E2D372AB2"
     },
     {
       "source": "Adzuna",
@@ -19268,32 +19294,6 @@
     },
     {
       "source": "Adzuna",
-      "id": "5885777366",
-      "job_id": "5885777366",
-      "title": "AOSP Platform Engineer",
-      "company": "L4B Software",
-      "company_name": "L4B Software",
-      "company_url": "",
-      "company_logo": "",
-      "location": "Pune, Maharashtra",
-      "work_mode": "",
-      "experience": "",
-      "experience_min": null,
-      "experience_max": null,
-      "salary": "",
-      "salary_min": null,
-      "salary_max": null,
-      "salary_currency": "INR",
-      "skills": [],
-      "description": "Senior AOSP Platform Engineer If you build Android itself — not just apps that run on Android — this role is for you. At L4B Software , we are looking for a Senior AOSP Platform Engineer who enjoys working deep inside Android: understanding how the OS boots, how services communicate, how hardware meets the Android framework, how the platform is secured, and how difficult system-level problems are traced across multiple layers. This is an opportunity to work on real embedded Android platforms , …",
-      "employment_type": "",
-      "category": "IT Jobs",
-      "posted_at": "2026-09-16T12:46:25Z",
-      "original_url": "https://www.adzuna.in/details/5885777366?utm_medium=api&utm_source=f956dbd6",
-      "redirect_url": "https://www.adzuna.in/details/5885777366?utm_medium=api&utm_source=f956dbd6"
-    },
-    {
-      "source": "Adzuna",
       "id": "1171509257",
       "job_id": "1171509257",
       "title": "Looking for PHP Developer",
@@ -19317,6 +19317,32 @@
       "posted_at": "2019-06-05T21:12:24Z",
       "original_url": "https://www.adzuna.in/details/1171509257?utm_medium=api&utm_source=f956dbd6",
       "redirect_url": "https://www.adzuna.in/details/1171509257?utm_medium=api&utm_source=f956dbd6"
+    },
+    {
+      "source": "Adzuna",
+      "id": "5885777366",
+      "job_id": "5885777366",
+      "title": "AOSP Platform Engineer",
+      "company": "L4B Software",
+      "company_name": "L4B Software",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Pune, Maharashtra",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "",
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "Senior AOSP Platform Engineer If you build Android itself — not just apps that run on Android — this role is for you. At L4B Software , we are looking for a Senior AOSP Platform Engineer who enjoys working deep inside Android: understanding how the OS boots, how services communicate, how hardware meets the Android framework, how the platform is secured, and how difficult system-level problems are traced across multiple layers. This is an opportunity to work on real embedded Android platforms , …",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2026-09-16T12:46:25Z",
+      "original_url": "https://www.adzuna.in/details/5885777366?utm_medium=api&utm_source=f956dbd6",
+      "redirect_url": "https://www.adzuna.in/details/5885777366?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -19528,6 +19554,32 @@
     },
     {
       "source": "Adzuna",
+      "id": "5875602766",
+      "job_id": "5875602766",
+      "title": "PHP Developer",
+      "company": "DevRabbit IT Solutions",
+      "company_name": "DevRabbit IT Solutions",
+      "company_url": "",
+      "company_logo": "",
+      "location": "Hyderabad, Telangana",
+      "work_mode": "",
+      "experience": "",
+      "experience_min": null,
+      "experience_max": null,
+      "salary": "",
+      "salary_min": null,
+      "salary_max": null,
+      "salary_currency": "INR",
+      "skills": [],
+      "description": "Location: Hyderabad Work Mode: Work from Office Core Responsibilities Backend Development: Utilize PHP to develop clean, efficient code and support existing application logic. Database Management: Write and optimize MySQL queries and assist in data analysis to ensure system integrity. Quality Assurance: Conduct comprehensive mobile application testing, including the development and execution of manual test scripts and performance evaluations. Tool Integration: Quickly learn and adopt new develo…",
+      "employment_type": "",
+      "category": "IT Jobs",
+      "posted_at": "2026-09-08T18:42:12Z",
+      "original_url": "https://www.adzuna.in/land/ad/5875602766?se=yElVAXC28RGrjN8JB-Sw5g&utm_medium=api&utm_source=f956dbd6&v=6DEDD2BAE7DB2461C3B4207FE4FB408EADEB4AC2",
+      "redirect_url": "https://www.adzuna.in/land/ad/5875602766?se=yElVAXC28RGrjN8JB-Sw5g&utm_medium=api&utm_source=f956dbd6&v=6DEDD2BAE7DB2461C3B4207FE4FB408EADEB4AC2"
+    },
+    {
+      "source": "Adzuna",
       "id": "5837139469",
       "job_id": "5837139469",
       "title": "App Developer - AI/ML",
@@ -19549,8 +19601,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-08-12T01:59:37Z",
-      "original_url": "https://www.adzuna.in/land/ad/5837139469?se=zHJkoim28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=16DC1893C3026AA51441662E0B1A61360470917B",
-      "redirect_url": "https://www.adzuna.in/land/ad/5837139469?se=zHJkoim28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=16DC1893C3026AA51441662E0B1A61360470917B"
+      "original_url": "https://www.adzuna.in/land/ad/5837139469?se=yElVAXC28RGrjN8JB-Sw5g&utm_medium=api&utm_source=f956dbd6&v=16DC1893C3026AA51441662E0B1A61360470917B",
+      "redirect_url": "https://www.adzuna.in/land/ad/5837139469?se=yElVAXC28RGrjN8JB-Sw5g&utm_medium=api&utm_source=f956dbd6&v=16DC1893C3026AA51441662E0B1A61360470917B"
     },
     {
       "source": "Adzuna",
@@ -19991,8 +20043,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-06T18:33:35Z",
-      "original_url": "https://www.adzuna.in/land/ad/5873073655?se=zHJkoim28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=8CF7AC4AA6297279C7276C65DFCD4B66C8E0F629",
-      "redirect_url": "https://www.adzuna.in/land/ad/5873073655?se=zHJkoim28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=8CF7AC4AA6297279C7276C65DFCD4B66C8E0F629"
+      "original_url": "https://www.adzuna.in/land/ad/5873073655?se=yElVAXC28RGrjN8JB-Sw5g&utm_medium=api&utm_source=f956dbd6&v=8CF7AC4AA6297279C7276C65DFCD4B66C8E0F629",
+      "redirect_url": "https://www.adzuna.in/land/ad/5873073655?se=yElVAXC28RGrjN8JB-Sw5g&utm_medium=api&utm_source=f956dbd6&v=8CF7AC4AA6297279C7276C65DFCD4B66C8E0F629"
     },
     {
       "source": "Adzuna",
@@ -22877,8 +22929,8 @@
       "employment_type": "",
       "category": "Sales Jobs",
       "posted_at": "2026-07-24T19:00:30Z",
-      "original_url": "https://www.adzuna.in/land/ad/5813877410?se=yIe9pim28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=5ABD9C366C2EE1C22239E8138769D77CBAC67720",
-      "redirect_url": "https://www.adzuna.in/land/ad/5813877410?se=yIe9pim28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=5ABD9C366C2EE1C22239E8138769D77CBAC67720"
+      "original_url": "https://www.adzuna.in/land/ad/5813877410?se=MkqdA3C28RG6IO5SmYJ5DA&utm_medium=api&utm_source=f956dbd6&v=5ABD9C366C2EE1C22239E8138769D77CBAC67720",
+      "redirect_url": "https://www.adzuna.in/land/ad/5813877410?se=MkqdA3C28RG6IO5SmYJ5DA&utm_medium=api&utm_source=f956dbd6&v=5ABD9C366C2EE1C22239E8138769D77CBAC67720"
     },
     {
       "source": "Adzuna",
@@ -22903,8 +22955,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-09-12T17:21:16Z",
-      "original_url": "https://www.adzuna.in/land/ad/5880953332?se=yIe9pim28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=FF039A21160593C86C0FCFD93A7FB0509A836A68",
-      "redirect_url": "https://www.adzuna.in/land/ad/5880953332?se=yIe9pim28RGVK77OOimlQQ&utm_medium=api&utm_source=f956dbd6&v=FF039A21160593C86C0FCFD93A7FB0509A836A68"
+      "original_url": "https://www.adzuna.in/land/ad/5880953332?se=MkqdA3C28RG6IO5SmYJ5DA&utm_medium=api&utm_source=f956dbd6&v=FF039A21160593C86C0FCFD93A7FB0509A836A68",
+      "redirect_url": "https://www.adzuna.in/land/ad/5880953332?se=MkqdA3C28RG6IO5SmYJ5DA&utm_medium=api&utm_source=f956dbd6&v=FF039A21160593C86C0FCFD93A7FB0509A836A68"
     },
     {
       "source": "Adzuna",
@@ -24099,8 +24151,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-08-29T00:04:45Z",
-      "original_url": "https://www.adzuna.in/land/ad/5859991622?se=VgYKqCm28RGzvZ_vy4M_ag&utm_medium=api&utm_source=f956dbd6&v=CE774EEAE649A4BE20CCFD242573385700A749E0",
-      "redirect_url": "https://www.adzuna.in/land/ad/5859991622?se=VgYKqCm28RGzvZ_vy4M_ag&utm_medium=api&utm_source=f956dbd6&v=CE774EEAE649A4BE20CCFD242573385700A749E0"
+      "original_url": "https://www.adzuna.in/land/ad/5859991622?se=9E80BHC28RG7t6kfOdp34w&utm_medium=api&utm_source=f956dbd6&v=CE774EEAE649A4BE20CCFD242573385700A749E0",
+      "redirect_url": "https://www.adzuna.in/land/ad/5859991622?se=9E80BHC28RG7t6kfOdp34w&utm_medium=api&utm_source=f956dbd6&v=CE774EEAE649A4BE20CCFD242573385700A749E0"
     },
     {
       "source": "Adzuna",
@@ -24651,11 +24703,11 @@
   ],
   "meta": {
     "collected_jobs": 1064,
-    "unique_jobs": 948,
-    "new_jobs": 2,
-    "saved_matches": 948,
-    "last_run_utc": "2026-09-22T02:02:27.343700+00:00",
-    "updated_at": "2026-09-22T02:02:27.343700+00:00",
+    "unique_jobs": 950,
+    "new_jobs": 4,
+    "saved_matches": 950,
+    "last_run_utc": "2026-09-22T10:26:05.613369+00:00",
+    "updated_at": "2026-09-22T10:26:05.613369+00:00",
     "sources": {
       "Naukri": 0,
       "Adzuna": 1064
