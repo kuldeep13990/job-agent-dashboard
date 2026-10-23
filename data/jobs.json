@@ -15909,8 +15909,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-10-21T23:42:19Z",
-      "original_url": "https://www.adzuna.in/land/ad/5936953744?se=CtAGwVrO8RG_LI0d65RFqg&utm_medium=api&utm_source=f956dbd6&v=17FFD535D10F50752DC54FDF1F078746C18D7BC8",
-      "redirect_url": "https://www.adzuna.in/land/ad/5936953744?se=CtAGwVrO8RG_LI0d65RFqg&utm_medium=api&utm_source=f956dbd6&v=17FFD535D10F50752DC54FDF1F078746C18D7BC8"
+      "original_url": "https://www.adzuna.in/land/ad/5936953744?se=OOTH3IbO8RGxJNLV4g2Eww&utm_medium=api&utm_source=f956dbd6&v=17FFD535D10F50752DC54FDF1F078746C18D7BC8",
+      "redirect_url": "https://www.adzuna.in/land/ad/5936953744?se=OOTH3IbO8RGxJNLV4g2Eww&utm_medium=api&utm_source=f956dbd6&v=17FFD535D10F50752DC54FDF1F078746C18D7BC8"
     },
     {
       "source": "Adzuna",
@@ -24340,10 +24340,10 @@
   "meta": {
     "collected_jobs": 1049,
     "unique_jobs": 936,
-    "new_jobs": 2,
+    "new_jobs": 0,
     "saved_matches": 936,
-    "last_run_utc": "2026-10-22T20:54:29.989548+00:00",
-    "updated_at": "2026-10-22T20:54:29.989548+00:00",
+    "last_run_utc": "2026-10-23T02:10:17.713287+00:00",
+    "updated_at": "2026-10-23T02:10:17.713287+00:00",
     "sources": {
       "Naukri": 0,
       "Adzuna": 1049
