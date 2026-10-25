@@ -24262,10 +24262,10 @@
   "meta": {
     "collected_jobs": 1050,
     "unique_jobs": 933,
-    "new_jobs": 10,
+    "new_jobs": 0,
     "saved_matches": 933,
-    "last_run_utc": "2026-10-24T19:53:47.911008+00:00",
-    "updated_at": "2026-10-24T19:53:47.911008+00:00",
+    "last_run_utc": "2026-10-25T01:55:44.259209+00:00",
+    "updated_at": "2026-10-25T01:55:44.259209+00:00",
     "sources": {
       "Naukri": 0,
       "Adzuna": 1050
