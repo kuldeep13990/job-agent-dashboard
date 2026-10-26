@@ -24366,10 +24366,10 @@
   "meta": {
     "collected_jobs": 1049,
     "unique_jobs": 937,
-    "new_jobs": 6,
+    "new_jobs": 0,
     "saved_matches": 937,
-    "last_run_utc": "2026-10-26T17:44:04.958217+00:00",
-    "updated_at": "2026-10-26T17:44:04.958217+00:00",
+    "last_run_utc": "2026-10-26T21:58:33.952570+00:00",
+    "updated_at": "2026-10-26T21:58:33.952570+00:00",
     "sources": {
       "Naukri": 0,
       "Adzuna": 1049
