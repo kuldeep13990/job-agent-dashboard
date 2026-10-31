@@ -543,8 +543,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-10-30T08:05:31Z",
-      "original_url": "https://www.adzuna.in/land/ad/5946279580?se=3l8s8KrU8RGGCOFuy44SDg&utm_medium=api&utm_source=f956dbd6&v=3C9717E769EF6CF95993BC63C411A83BA09E773A",
-      "redirect_url": "https://www.adzuna.in/land/ad/5946279580?se=3l8s8KrU8RGGCOFuy44SDg&utm_medium=api&utm_source=f956dbd6&v=3C9717E769EF6CF95993BC63C411A83BA09E773A"
+      "original_url": "https://www.adzuna.in/land/ad/5946279580?se=lmLwXtbU8RGGCOFuy44SDg&utm_medium=api&utm_source=f956dbd6&v=3C9717E769EF6CF95993BC63C411A83BA09E773A",
+      "redirect_url": "https://www.adzuna.in/land/ad/5946279580?se=lmLwXtbU8RGGCOFuy44SDg&utm_medium=api&utm_source=f956dbd6&v=3C9717E769EF6CF95993BC63C411A83BA09E773A"
     },
     {
       "source": "Adzuna",
@@ -7516,11 +7516,11 @@
     },
     {
       "source": "Adzuna",
-      "id": "3576198053",
-      "job_id": "3576198053",
-      "title": "React Native Developer",
-      "company": "WebMob Technologies",
-      "company_name": "WebMob Technologies",
+      "id": "5947460153",
+      "job_id": "5947460153",
+      "title": "AI & Full Stack Engineer",
+      "company": "Fancall Private Limited",
+      "company_name": "Fancall Private Limited",
       "company_url": "",
       "company_logo": "",
       "location": "Ahmedabad, Gujarat",
@@ -7528,17 +7528,17 @@
       "experience": "",
       "experience_min": null,
       "experience_max": null,
-      "salary": "",
-      "salary_min": 0,
-      "salary_max": 500000,
+      "salary": "360000",
+      "salary_min": 360000,
+      "salary_max": 480000,
       "salary_currency": "INR",
       "skills": [],
-      "description": "Requirements: Proficiency with React Native. Experience and Understanding of ES6 & JavaScript Concepts. Experience with React.js and Redux. Familiarity with native build tools, like XCode, Gradle Android Studio, IntelliJ Hands-on experience on Android, iOS platforms in creating Hybrid / Native applications. Has prior experience in creating bridging modules for React Native Understanding of the basic concepts of Android and iOS like Services, Background App Refresh, offline compatibility etc Han…",
+      "description": "Company: Fancall Experience: 1-2 Years Salary: ₹30,000-₹40,000 per month Location: Ahmedabad Employment Type: Full-time Role Overview The candidate will be responsible for developing and integrating AI-powered solutions while contributing to the development of our mobile applications and backend infrastructure. We are looking for someone who enjoys building products end-to-end, experimenting with emerging AI technologies and solving real-world technical challenges. Key Responsibilities 1. AI & …",
       "employment_type": "",
       "category": "IT Jobs",
-      "posted_at": "2022-10-11T07:23:58Z",
-      "original_url": "https://www.adzuna.in/details/3576198053?utm_medium=api&utm_source=f956dbd6",
-      "redirect_url": "https://www.adzuna.in/details/3576198053?utm_medium=api&utm_source=f956dbd6"
+      "posted_at": "2026-10-31T07:52:08Z",
+      "original_url": "https://www.adzuna.in/details/5947460153?utm_medium=api&utm_source=f956dbd6",
+      "redirect_url": "https://www.adzuna.in/details/5947460153?utm_medium=api&utm_source=f956dbd6"
     },
     {
       "source": "Adzuna",
@@ -17313,8 +17313,8 @@
       "employment_type": "",
       "category": "IT Jobs",
       "posted_at": "2026-10-30T08:05:32Z",
-      "original_url": "https://www.adzuna.in/land/ad/5946279811?se=7i9U96rU8RGRQOLR_vdAhg&utm_medium=api&utm_source=f956dbd6&v=6999DCD8634D3615F2277B83AD4EEBEC15A9152A",
-      "redirect_url": "https://www.adzuna.in/land/ad/5946279811?se=7i9U96rU8RGRQOLR_vdAhg&utm_medium=api&utm_source=f956dbd6&v=6999DCD8634D3615F2277B83AD4EEBEC15A9152A"
+      "original_url": "https://www.adzuna.in/land/ad/5946279811?se=ykZvctbU8RGzkfY_QG7FnA&utm_medium=api&utm_source=f956dbd6&v=6999DCD8634D3615F2277B83AD4EEBEC15A9152A",
+      "redirect_url": "https://www.adzuna.in/land/ad/5946279811?se=ykZvctbU8RGzkfY_QG7FnA&utm_medium=api&utm_source=f956dbd6&v=6999DCD8634D3615F2277B83AD4EEBEC15A9152A"
     },
     {
       "source": "Adzuna",
@@ -23896,15 +23896,15 @@
     }
   ],
   "meta": {
-    "collected_jobs": 1042,
+    "collected_jobs": 1043,
     "unique_jobs": 919,
-    "new_jobs": 0,
+    "new_jobs": 1,
     "saved_matches": 919,
-    "last_run_utc": "2026-10-30T21:43:45.096224+00:00",
-    "updated_at": "2026-10-30T21:43:45.096224+00:00",
+    "last_run_utc": "2026-10-31T02:55:06.318250+00:00",
+    "updated_at": "2026-10-31T02:55:06.318250+00:00",
     "sources": {
       "Naukri": 0,
-      "Adzuna": 1042
+      "Adzuna": 1043
     }
   }
 }
