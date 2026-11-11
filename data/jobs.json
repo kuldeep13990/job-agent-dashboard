@@ -23898,10 +23898,10 @@
   "meta": {
     "collected_jobs": 1037,
     "unique_jobs": 919,
-    "new_jobs": 1,
+    "new_jobs": 0,
     "saved_matches": 919,
-    "last_run_utc": "2026-11-10T22:36:30.542518+00:00",
-    "updated_at": "2026-11-10T22:36:30.542518+00:00",
+    "last_run_utc": "2026-11-11T03:21:38.057944+00:00",
+    "updated_at": "2026-11-11T03:21:38.057944+00:00",
     "sources": {
       "Naukri": 0,
       "Adzuna": 1037
